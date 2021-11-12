@@ -1,14 +1,27 @@
 <script lang="ts">
+	import { Router, Route } from 'svelte-routing'
 	import Header from './components/Header.svelte'
 	import SideNav from './components/SideNav.svelte'
-	import Content from './components/Content.svelte'
+
+	// import NodeRow from './NodeRow.svelte'
+	import Dashboard from './routes/Dashboard.svelte'
+	import Node from './routes/Node.svelte'
+
+	export let url = ''
 </script>
 
-<main class="dark main">
-	<Header />
-	<SideNav />
-	<Content />
-</main>
+<Router {url}>
+	<main class="dark main">
+		<Header />
+		<SideNav />
+		<section>
+			<Route path="node/:id" let:params>
+				<Node id={params.id} />
+			</Route>
+			<Route path="/"><Dashboard /></Route>
+		</section>
+	</main>
+</Router>
 
 <style global lang="postcss">
 	@tailwind base;

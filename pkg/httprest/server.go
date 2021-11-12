@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	zapp "github.com/zees-dev/zeth/app"
 	"github.com/zees-dev/zeth/pkg/app"
 	"github.com/zees-dev/zeth/pkg/httprest/node"
 	"github.com/zees-dev/zeth/pkg/httprest/settings"
@@ -37,9 +38,15 @@ func Routing(app *app.App) *mux.Router {
 	settings.RegisterRoutes(app, apiRouter)
 	node.RegisterRoutes(app, apiRouter)
 
-	// serve UI on root URL if UIDir provided
-	if app.ServeSettings.Enabled {
-		r.PathPrefix("/").Handler(app.ServeSettings.FileServer)
+	// Setup file server to serve UI.
+	// Reference static dir if in dev mode; use embedded dir for production (single binary).
+	if app.IsDev {
+		log.Info().Msgf("serving UI on root URL (dev mode)")
+		spa := spaHandler{staticPath: "./app/public", indexPath: "index.html"}
+		r.PathPrefix("/").Handler(spa)
+	} else {
+		log.Info().Msgf("serving UI on root URL")
+		r.PathPrefix("/").Handler(http.FileServer(http.FS(zapp.ProdServeFS)))
 	}
 
 	return r

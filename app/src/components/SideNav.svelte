@@ -1,22 +1,26 @@
 <script lang="ts">
-	import { ethersProvider } from '../stores'
+	import { Router, Link, Route } from 'svelte-routing'
 
-	let blockNumber = -1
-	$: {
-		if ($ethersProvider) {
-			$ethersProvider.getBlockNumber().then((bn) => {
-				blockNumber = bn
-			})
-			$ethersProvider.on('block', (bn) => {
-				blockNumber = bn
-			})
-		}
-	}
+	// import { ethersProvider } from '../stores'
+
+	// let blockNumber = -1
+	// $: {
+	// 	if ($ethersProvider) {
+	// 		$ethersProvider.getBlockNumber().then((bn) => {
+	// 			blockNumber = bn
+	// 		})
+	// 		$ethersProvider.on('block', (bn) => {
+	// 			blockNumber = bn
+	// 		})
+	// 	}
+	// }
 </script>
 
 <nav>
 	<section>menu</section>
-	<section>{blockNumber}</section>
+	<Link to="/">Dashboard</Link>
+	<Link to="node/1">Node</Link>
+	<!-- <section>{blockNumber}</section> -->
 </nav>
 
 <style>

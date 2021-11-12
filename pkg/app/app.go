@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
-	zapp "github.com/zees-dev/zeth/app"
 	"github.com/zees-dev/zeth/pkg/datastore"
 	"github.com/zees-dev/zeth/pkg/geth/downloader"
 	"github.com/zees-dev/zeth/pkg/node"
@@ -35,32 +34,17 @@ type (
 )
 
 type App struct {
-	Port          int
-	DataDir       string
-	IsDev         bool
-	ServeSettings ServeSettings
-	Services      Services
+	Port     int
+	DataDir  string
+	IsDev    bool
+	Services Services
 }
 
 func NewApp(store datastore.Store, isDev bool) *App {
-	// Setup file server to serve UI.
-	// Reference static dir if in dev mode; use embedded dir for production (single binary).
-	var uiFileServer http.Handler
-	if isDev {
-		log.Info().Msgf("serving UI on root URL (dev mode)")
-		uiFileServer = http.FileServer(http.Dir(zapp.DevServeDir))
-	} else {
-		log.Info().Msgf("serving UI on root URL")
-		uiFileServer = http.FileServer(http.FS(zapp.ProdServeFS))
-	}
-
 	return &App{
 		Port:    DefaultPort,
 		DataDir: DefaultAppDir,
-		ServeSettings: ServeSettings{
-			Enabled:    true,
-			FileServer: uiFileServer,
-		},
+		IsDev:   isDev,
 		Services: Services{
 			Settings: settings.NewService(store),
 			Nodes:    node.NewService(store),

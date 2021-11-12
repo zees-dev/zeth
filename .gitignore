@@ -1,0 +1,12 @@
+
+docs/
+
+# IDE
+.vscode/
+
+# DB
+zeth.db/
+
+# Bin
+zeth
+!cmd/zeth

@@ -1,12 +1,12 @@
 <script lang="ts">
 	import Header from './components/Header.svelte'
-	import Nav from './components/Nav.svelte'
+	import SideNav from './components/SideNav.svelte'
 	import Content from './components/Content.svelte'
 </script>
 
 <main class="dark main">
 	<Header />
-	<Nav />
+	<SideNav />
 	<Content />
 </main>
 

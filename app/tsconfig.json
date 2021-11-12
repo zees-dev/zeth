@@ -1,0 +1,21 @@
+{
+	"extends": "@tsconfig/svelte/tsconfig.json",
+	// https://codechips.me/eslint-svelte-typescript/
+	"compilerOptions": {
+		"lib": ["DOM", "ES2017", "WebWorker"],
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"importsNotUsedAsValues": "remove",
+		"strict": true
+	},
+	"paths": {
+		"$lib": ["src/lib"],
+		"$lib/*": ["src/lib/*"],
+		"$components": ["src/components"],
+		"$components/*": ["src/components/*"],
+		"$stores": ["src/stores"],
+		"$stores/*": ["src/stores/*"]
+	},
+	"include": ["src/**/*"],
+	"exclude": ["node_modules/*", "__sapper__/*", "public/*"]
+}

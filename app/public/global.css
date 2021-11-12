@@ -1,0 +1,113 @@
+html,
+body {
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+a {
+	color: rgb(0, 100, 200);
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:visited {
+	color: rgb(0, 80, 160);
+}
+
+label {
+	display: block;
+}
+
+input,
+button,
+select,
+textarea {
+	font-family: inherit;
+	font-size: inherit;
+	-webkit-padding: 0.4em 0;
+	padding: 0.4em;
+	margin: 0 0 0.5em 0;
+	box-sizing: border-box;
+	border: 1px solid #ccc;
+	border-radius: 2px;
+}
+
+input:disabled {
+	color: #ccc;
+}
+
+button {
+	color: #333;
+	background-color: #f4f4f4;
+	outline: none;
+}
+
+button:disabled {
+	color: #999;
+}
+
+button:not(:disabled):active {
+	background-color: #ddd;
+}
+
+button:focus {
+	border-color: #666;
+}
+
+/* Themes */
+:root {
+	--gray0: #f8f8f8;
+	--gray1: #dbe1e8;
+	--gray2: #b2becd;
+	--gray3: #6c7983;
+	--gray4: #454e56;
+	--gray5: #2a2e35;
+	--gray6: #12181b;
+	--blue: #0084a5;
+	--purple: #a82dd1;
+	--yellow: #fff565;
+}
+
+.light {
+	--bg: var(--gray0);
+	--bg-nav: linear-gradient(to right, var(--gray1), var(--gray3));
+	--bg-dropdown: var(--gray0);
+	--text: var(--gray6);
+	--border-color: var(--blue);
+	--bg-solar: var(--yellow);
+}
+
+.dark {
+	--bg: var(--gray5);
+	--bg-nav: linear-gradient(to right, var(--gray5), var(--gray6));
+	--bg-dropdown: var(--gray6);
+	--text: var(--gray0);
+	--border-color: var(--purple);
+	--bg-solar: var(--blue);
+}
+
+.solar {
+	--gray0: #fbffd4;
+	--gray1: #f7f8d0;
+	--gray2: #b6f880;
+	--gray3: #5ec72d;
+	--gray4: #3ea565;
+	--gray5: #005368;
+	--gray6: #003d4c;
+}
+
+#dark::before {
+	background: #2a2e35;
+}
+
+#light::before {
+	background: #ffffff;
+}
+
+#solar::before {
+	background: var(--bg-solar);
+}

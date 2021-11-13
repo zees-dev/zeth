@@ -49,7 +49,7 @@
 </script>
 
 <header>
-	<div class="flex place-items-center p-1">
+	<div class="flex place-items-center py-1 px-2">
 		<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
 			<g fill="none" fillRule="evenodd">
 				<path d="M10 0h12a10 10 0 0110 10v12a10 10 0 01-10 10H10A10 10 0 010 22V10A10 10 0 0110 0z" fill="#FFF" />
@@ -61,7 +61,7 @@
 			<div class="mt-6">
 				{EthNetworks[networkId] ?? 'Unknown'}<sup title="Network ID: {networkId}">{networkId}</sup>
 			</div>
-			<div title="block no. {blockNumber}" class="ml-6">{blockNumber}</div>
+			<div title="block no. {blockNumber}" class="ml-6 w-16">{blockNumber}</div>
 		</div>
 	</div>
 
@@ -86,7 +86,7 @@
 		<div>[Theme]</div>
 		<div>
 			<p>{username}</p>
-			<p><span>[X]</span> logout</p>
+			<p class="flex"><span class="mr-2">[X]</span> logout</p>
 		</div>
 	</div>
 </header>
@@ -95,7 +95,7 @@
 	header {
 		display: grid;
 		align-items: center;
-		grid-template-columns: 1fr 1fr auto 1fr;
+		grid-template-columns: min-content 1fr auto min-content;
 		grid-gap: 0.5rem;
 	}
 

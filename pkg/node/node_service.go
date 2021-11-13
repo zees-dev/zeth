@@ -61,6 +61,8 @@ func (ns *nodeService) Get(ctx context.Context, id uuid.UUID) (SupportedNode, er
 }
 
 func (ns *nodeService) Update(ctx context.Context, id uuid.UUID, node SupportedNode) error {
+	ns.cache.Delete(id)
+
 	ok, err := ns.store.Has(nodeKey, id.Bytes())
 	if err != nil {
 		return err
@@ -75,6 +77,8 @@ func (ns *nodeService) Update(ctx context.Context, id uuid.UUID, node SupportedN
 }
 
 func (ns *nodeService) Delete(ctx context.Context, id uuid.UUID) error {
+	ns.cache.Delete(id)
+
 	return ns.store.RemovePrefix(nodeKey, id.Bytes())
 }
 

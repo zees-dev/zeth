@@ -6,22 +6,26 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
+	uuid "github.com/satori/go.uuid"
 	"github.com/zees-dev/zeth/pkg/app"
 	"github.com/zees-dev/zeth/pkg/httprest/rest"
+	"github.com/zees-dev/zeth/pkg/node"
 	"github.com/zees-dev/zeth/pkg/settings"
 )
 
 type settingsHandler struct {
 	settings settings.Settings
+	nodes    node.NodeService
 }
 
 func RegisterRoutes(app *app.App, baseRouter *mux.Router) {
 	h := settingsHandler{
 		settings: app.Services.Settings,
+		nodes:    app.Services.Nodes,
 	}
 
 	baseRouter.HandleFunc("/settings", h.get).Methods(http.MethodGet)
-	baseRouter.HandleFunc("/settings", h.put).Methods(http.MethodPut)
+	baseRouter.HandleFunc("/settings/node", h.updateDefaultNode).Methods(http.MethodPut)
 }
 
 /* curl request:
@@ -39,58 +43,54 @@ func (h *settingsHandler) get(w http.ResponseWriter, r *http.Request) {
 	rest.JSON(w, settings)
 }
 
-type settingsRequestBody struct {
-	Title string `json:"title"`
+type settingsNodeUpdateRequestBody struct {
+	Uuid string `json:"uuid"`
 }
 
-func (a *settingsRequestBody) Validate() url.Values {
+func (s *settingsNodeUpdateRequestBody) Validate() url.Values {
 	errs := url.Values{}
-	// check if the title empty
-	if a.Title == "" {
-		errs.Add("title", "The title field is required!")
+
+	if _, err := uuid.FromString(s.Uuid); err != nil {
+		errs.Add("uuid", "invalid uuid")
 	}
-	if a.Title == "" {
-		errs.Add("titlea", "The title field is requireds!")
-	}
+
 	return errs
 }
 
 /* curl request:
 curl -X PUT \
 	-H "Content-Type: application/json" \
-	-d '{"theme": "dark"}' \
-	http://localhost:7000/api/v1/settings
+	-d '{"uuid": "00000000-0000-0000-0000-000000000000"}' \
+	http://localhost:7000/api/v1/settings/node
 */
-func (h *settingsHandler) put(w http.ResponseWriter, r *http.Request) {
-	if ok := rest.DecodeAndValidateJSONPayload(w, r.Body, &settingsRequestBody{}); !ok {
+func (h *settingsHandler) updateDefaultNode(w http.ResponseWriter, r *http.Request) {
+	payload := settingsNodeUpdateRequestBody{}
+	if ok := rest.DecodeAndValidateJSONPayload(w, r.Body, &payload); !ok {
 		log.Debug().Msg("validation failed")
 		return
 	}
 
-	setting, err := h.settings.Get(r.Context())
+	// get id from request parameters
+	uid, _ := uuid.FromString(payload.Uuid)
+
+	if _, err := h.nodes.Get(r.Context(), uid); err != nil {
+		http.Error(w, rest.HTTPNotFound, http.StatusNotFound)
+		return
+	}
+
+	s, err := h.settings.Get(r.Context())
 	if err != nil {
 		http.Error(w, rest.HTTPInternalServerError, http.StatusInternalServerError)
 		return
 	}
 
-	// TODO update the settings with request payload
+	// update default node ID
+	s.NodeSettings.DefaultNodeID = uid
 
-	// body, err := ioutil.ReadAll(r.Body)
-	// if err != nil {
-	// 	rest.InternalServerError(w, err)
-	// 	return
-	// }
-
-	// var settings settings.Setting
-	// if err := json.Unmarshal(body, &settings); err != nil {
-	// 	rest.BadRequest(w, err)
-	// 	return
-	// }
-
-	if err := h.settings.Update(r.Context(), setting); err != nil {
+	if err := h.settings.Update(r.Context(), s); err != nil {
 		http.Error(w, rest.HTTPInternalServerError, http.StatusInternalServerError)
 		return
 	}
 
-	rest.JSON(w, setting)
+	rest.JSON(w, s)
 }

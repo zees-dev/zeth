@@ -15,7 +15,7 @@ type registerNodeRequestPayload struct {
 	Name            string `json:"name"`
 	HTTPRPCURL      string `json:"httpRPCURL"`
 	WebsocketRPCURL string `json:"websocketRPCURL"`
-	TestConnection  bool   `json:"testConnection"`
+	TestConnection  bool   `json:"test"`
 }
 
 func (payload *registerNodeRequestPayload) Validate() url.Values {
@@ -28,9 +28,14 @@ func (payload *registerNodeRequestPayload) Validate() url.Values {
 	if payload.HTTPRPCURL == "" {
 		errs.Add("httpRPCURL", "httpRPCURL is required")
 	} else {
-		_, err := url.Parse(payload.HTTPRPCURL)
-		if err != nil {
+		if _, err := url.Parse(payload.HTTPRPCURL); err != nil {
 			errs.Add("httpRPCURL", "httpRPCURL is invalid")
+		}
+	}
+
+	if payload.WebsocketRPCURL != "" {
+		if _, err := url.Parse(payload.WebsocketRPCURL); err != nil {
+			errs.Add("websocketRPCURL", "websocketRPCURL is invalid")
 		}
 	}
 
@@ -41,7 +46,7 @@ func (payload *registerNodeRequestPayload) Validate() url.Values {
 /* curl request:
 curl -X POST \
 	-H "Content-Type: application/json" \
-	-d '{"name": "test", "rpcURL": "http://localhost:8545"}' \
+	-d '{"name": "test", "httpRPCURL": "http://localhost:8545"}' \
 	http://localhost:7000/api/v1/nodes/remote
 */
 func (h *nodesHandler) registerRemoteNode(w http.ResponseWriter, r *http.Request) {

@@ -18,11 +18,14 @@ var ErrNodeTypeNotFound = errors.New("node type not found")
 
 type nodeService struct {
 	store datastore.Store
+	cache ReverseProxyCache
 }
 
 func NewService(store datastore.Store) *nodeService {
+	rpCache := NewRPCProxyCache(defaultProxyCacheSize)
 	return &nodeService{
 		store: store,
+		cache: rpCache,
 	}
 }
 
@@ -92,6 +95,10 @@ func (ns *nodeService) GetAll(ctx context.Context) ([]SupportedNode, error) {
 	}
 
 	return results, nil
+}
+
+func (ns *nodeService) ReverseProxyCache() ReverseProxyCache {
+	return ns.cache
 }
 
 func unmarshal(b []byte) (SupportedNode, error) {

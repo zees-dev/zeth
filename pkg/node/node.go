@@ -13,6 +13,7 @@ type NodeService interface {
 	GetAll(ctx context.Context) ([]SupportedNode, error)
 	Update(ctx context.Context, id uuid.UUID, Node SupportedNode) error
 	Delete(ctx context.Context, id uuid.UUID) error
+	ReverseProxyCache() ReverseProxyCache
 }
 
 // Following sites can be used to point to free ethereum nodes

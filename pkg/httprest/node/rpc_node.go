@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"sync"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -16,15 +14,6 @@ import (
 	"github.com/yhat/wsutil"
 	"github.com/zees-dev/zeth/pkg/httprest/rest"
 	"github.com/zees-dev/zeth/pkg/node"
-)
-
-var (
-	// TODO: improve this cache (use LRU cache if required - https://github.com/hashicorp/golang-lru)
-	// nodeReverseProxyCache is a concurrency-safe cache of RPC reverse proxies for nodes.
-	nodeReverseProxyCache sync.Map // type is sync.Map[uuid.UUID]http.Handler
-
-	// the set key(s) in the cache are automatically evicted after specified cacheEvictionDuration.
-	cacheEvictionDuration = time.Minute * 5
 )
 
 /* curl request:
@@ -47,10 +36,10 @@ func (h *nodesHandler) rpcNode(w http.ResponseWriter, r *http.Request) {
 	r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
 
 	// get rpcReverseProxy from cache if possible
-	if nodeRPCReverseProxy, ok := nodeReverseProxyCache.Load(uid); ok {
+	if nodeRPCReverseProxy, ok := h.nodes.ReverseProxyCache().Get(r, uid); ok {
 		log.Debug().Msgf("nodeRPCReverseProxy found in cache for node: %s", uid)
 		// TODO: log the request/response body/data
-		nodeRPCReverseProxy.(http.Handler).ServeHTTP(w, r)
+		nodeRPCReverseProxy.ServeHTTP(w, r)
 		return
 	}
 
@@ -79,12 +68,7 @@ func (h *nodesHandler) rpcNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// store proxy in cache for quicker subsequent lookups; automatically evict cache after x minutes
-	nodeReverseProxyCache.Store(uid, proxy)
-	go func() {
-		<-time.After(cacheEvictionDuration)
-		log.Debug().Msgf("evicting nodeReverseProxyCache for node: %s", uid)
-		nodeReverseProxyCache.Delete(uid)
-	}()
+	h.nodes.ReverseProxyCache().Set(r, uid, proxy)
 
 	// note: ServeHttp is a blocking call
 	proxy.ServeHTTP(w, r)

@@ -3,7 +3,7 @@
 	import Header from './components/Header.svelte'
 	import SideNav from './components/SideNav.svelte'
 
-	// import NodeRow from './NodeRow.svelte'
+	// content views
 	import Dashboard from './routes/Dashboard.svelte'
 	import Node from './routes/Node.svelte'
 
@@ -11,7 +11,7 @@
 </script>
 
 <Router {url}>
-	<main class="dark main">
+	<main class="main dark">
 		<Header />
 		<SideNav />
 		<section>

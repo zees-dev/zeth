@@ -33,7 +33,7 @@
 	async function getNodeDataFromRPC(nodes: Node[]): Promise<ProviderNode[]> {
 		const nodeList = await Promise.all(
 			nodes.map(async (n) => {
-				const provider = new ethers.providers.JsonRpcProvider('https://bsc-dataseed.binance.org/')
+				const provider = new ethers.providers.JsonRpcProvider(httpNodeRPCURL(n.id))
 				const [networkP, blockP, versionP, syncingP, peersP, modulesP, miningP] = await Promise.allSettled([
 					provider.getNetwork(),
 					provider.getBlockNumber(),
@@ -45,7 +45,7 @@
 				])
 
 				const pNode = n as ProviderNode
-				debugger
+
 				if (networkP.status === 'fulfilled') {
 					pNode.network = networkP.value
 					pNode.connected = true

@@ -6,23 +6,27 @@ module.exports = {
     removeDeprecatedGapUtilities: true,
   },
   plugins: [
-    // require('daisyui'),
+    require('daisyui'),
   ],
   // https://daisyui.com/docs/config
-  // daisyui: {
-  //   styled: true,
-  //   themes: true,
-  //   // themes: [
-  //   //   'light', // first one will be the default theme
-  //   //   'dark',
-  //   //   'forest',
-  //   //   'synthwave'
-  //   // ],
-  //   base: true,
-  //   utils: true,
-  //   logs: true,
-  //   rtl: false,
-  // },
+  daisyui: {
+    styled: true,
+    themes: true,
+    themes: [
+      'wireframe',
+      'light', // first one will be the default theme
+      'dark',
+      'forest',
+      'retro',
+      'cyberpunk',
+      'black',
+      'dracula',
+    ],
+    base: true,
+    utils: true,
+    logs: true,
+    rtl: false,
+  },
   purge: {
     content: [
       "./public/index.html",

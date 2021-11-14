@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	uuid "github.com/satori/go.uuid"
@@ -58,9 +59,10 @@ func (h *nodesHandler) registerRemoteNode(w http.ResponseWriter, r *http.Request
 
 	remoteNode := node.RemoteNode{
 		ZethNode: node.ZethNode{
-			ID:       uuid.NewV4(),
-			Name:     payload.Name,
-			NodeType: node.TypeRemoteNode,
+			ID:        uuid.NewV4(),
+			Name:      payload.Name,
+			NodeType:  node.TypeRemoteNode,
+			DateAdded: time.Now().UTC(),
 		},
 		RPC: node.RPC{
 			HTTP: payload.HTTPRPCURL,
@@ -103,7 +105,7 @@ func (h *nodesHandler) remoteNodeAlreadyExists(ctx context.Context, payload regi
 			if rn.Name == payload.Name {
 				return true, nil
 			}
-			if rn.RPC.HTTP == payload.HTTPRPCURL || rn.RPC.WS == payload.WebsocketRPCURL {
+			if rn.RPC.HTTP == payload.HTTPRPCURL {
 				return true, nil
 			}
 		}

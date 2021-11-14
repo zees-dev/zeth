@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { Router, Route } from 'svelte-routing'
-	import Header from './components/Header.svelte'
-	import SideNav from './components/SideNav.svelte'
+	import NavBar from './components/NavBar.svelte'
+	import Menu from './components/Menu.svelte'
 
 	// content views
 	import Dashboard from './routes/Dashboard.svelte'
@@ -11,9 +11,9 @@
 </script>
 
 <Router {url}>
-	<main class="main dark">
-		<Header />
-		<SideNav />
+	<main class="main">
+		<NavBar />
+		<Menu />
 		<section>
 			<Route path="node/:id" let:params>
 				<Node id={params.id} />

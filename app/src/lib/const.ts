@@ -9,9 +9,9 @@ export const wsNodeRPCURL = (id: string) => `ws://${window.location.host}${rpcNo
 
 // Supported Node types
 export enum NodeType {
-  TypeGethNodeInProcess = 1,
-  TypeGethNode,
-  TypeRemoteNode,
+  GethNodeInProcess = 1,
+  GethNode,
+  RemoteNode,
 }
 
 export enum NetworkType {

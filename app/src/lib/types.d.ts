@@ -14,6 +14,15 @@ export interface SettingsResponse {
 	}
 }
 
+export interface SyncStatus {
+	currentBlock: string
+	highestBlock: string
+	knownStates: string
+	pulledStates: string
+	startingBlock: string
+}
+
+
 export interface Node {
 	id: string
 	dateAdded: string

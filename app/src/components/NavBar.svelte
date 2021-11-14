@@ -65,9 +65,10 @@
 		</div>
 	</div>
 
-	<div class="flex">
+	<div class="flex place-items-center gap-2">
 		<!-- TODO: USE SWITCH HERE -->
-		<button class="mr-2" on:click={() => (useEIP1559 = !useEIP1559)}>EIP1559</button>
+		<input type="checkbox" bind:checked={useEIP1559} class="toggle toggle-sm" />
+		<div>EIP1559</div>
 		{#if useEIP1559}
 			<div>
 				<div>base fee: {Math.round(+gasFees.baseFeePerGas) || '?'}</div>
@@ -78,13 +79,23 @@
 		{/if}
 	</div>
 
-	<div>[Connect Wallet]</div>
+	<button class="btn btn-sm btn-outline">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			class="inline-block w-6 h-6 mr-2 stroke-current"
+		>
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+		</svg>
+		Connect Wallet
+	</button>
 
 	<div class="user">
 		<div>[N]</div>
 		<!-- TODO: USE SWITCH HERE -->
 		<div>[Theme]</div>
-		<div>
+		<div class="px-3">
 			<p>{username}</p>
 			<p class="flex"><span class="mr-2">[X]</span> logout</p>
 		</div>
@@ -97,6 +108,7 @@
 		align-items: center;
 		grid-template-columns: min-content 1fr auto min-content;
 		grid-gap: 0.5rem;
+		border: 1px solid #555ab9;
 	}
 
 	.user {

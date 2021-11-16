@@ -2,7 +2,9 @@ package node
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -32,9 +34,6 @@ func (h *nodesHandler) rpcNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set x-forwarded-host header to flag this request as proxied
-	r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
-
 	// get rpcReverseProxy from cache if possible
 	if nodeRPCReverseProxy, ok := h.nodes.ReverseProxyCache().Get(r, uid); ok {
 		log.Debug().Msgf("nodeRPCReverseProxy found in cache for node: %s", uid)
@@ -48,18 +47,6 @@ func (h *nodesHandler) rpcNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, rest.HTTPInternalServerError, http.StatusInternalServerError)
 		return
 	}
-
-	// TODO: make this into a middleware
-	// note: this is only applicable to HTTP RPC requests
-	bodyBytes, _ := ioutil.ReadAll(r.Body)
-	r.Body.Close() //  must close
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-	log.Info().Msgf(
-		"proxying rpc request:\n\tnode: %s\n\tbody: %s\n\tRPCs: %v",
-		uid,
-		string(bodyBytes),
-		rpcURLs,
-	)
 
 	// serve the reverse proxy
 	proxy, err := getNodeReverseProxy(rpcURLs, r)
@@ -125,7 +112,9 @@ func getNodeReverseProxy(rpc node.RPC, r *http.Request) (http.Handler, error) {
 			r.Host = url.Host // set Host header as expected by target
 			r.URL.Scheme = url.Scheme
 			r.URL.Path = url.Path
+			modifyRequest(r, rpc.WS)
 		}
+		// p.Transport = rpcRoundTripper{rpc.WS}
 		proxy = p
 	} else {
 		url, err := url.Parse(rpc.HTTP)
@@ -136,11 +125,13 @@ func getNodeReverseProxy(rpc node.RPC, r *http.Request) (http.Handler, error) {
 		p := httputil.NewSingleHostReverseProxy(url) // http(s) proxy reverse proxy
 		d := p.Director
 		p.Director = func(r *http.Request) {
-			d(r)              // call default director
-			r.Host = url.Host // set Host header as expected by target
-			r.URL.Scheme = url.Scheme
+			d(r) // call default director
+			// r.URL.Host = url.Host
+			// r.URL.Scheme = url.Scheme
 			r.URL.Path = url.Path
+			r.Host = url.Host // set Host header as expected by target
 		}
+		p.Transport = rpcRoundTripper{rpc.HTTP}
 		proxy = p
 	}
 
@@ -148,4 +139,73 @@ func getNodeReverseProxy(rpc node.RPC, r *http.Request) (http.Handler, error) {
 	proxy = http.StripPrefix(r.URL.Path, proxy)
 
 	return proxy, nil
+}
+
+// rpcRoundTripper satisfies the http.RoundTripper interface
+type rpcRoundTripper struct {
+	rpcURL string
+}
+
+// RoundTrip satisfies the http.RoundTripper interface
+// This allows us to simply log and/or modify the request end-to-end
+func (rt rpcRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	log.Printf("request received. url=%s", r.URL)
+	defer log.Printf("request complete. url=%s", r.URL)
+
+	modifyRequest(r, rt.rpcURL)
+
+	res, err := http.DefaultTransport.RoundTrip(r)
+	if err != nil {
+		return nil, err
+	}
+
+	modifyResponse(res, rt.rpcURL)
+
+	return res, nil
+}
+
+// modifyRequest set x-forwarded-host header to flag this request as proxied
+func modifyRequest(r *http.Request, rpcURL string) {
+	r.Header.Set("Host", r.Host)
+	// r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
+
+	// log request
+	reqHeadersBytes, _ := json.Marshal(r.Header)
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r.Body)
+	// r.Body.Close() //  must close
+	log.Info().Msgf(
+		"proxying rpc request:\n\treq: %s\n\trpc: %s\n\theaders: %s\n\tbody: %s",
+		r.RequestURI,
+		rpcURL,
+		string(reqHeadersBytes),
+		buf.String(),
+	)
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(buf.Bytes()))
+}
+
+// modifyResponse logs the response
+// source: https://daryl-ng.medium.com/why-you-should-avoid-ioutil-readall-in-go-e6be4de180f8
+func modifyResponse(res *http.Response, rpcURL string) error {
+	// log response
+	resHeadersBytes, _ := json.Marshal(res.Header)
+
+	var buf bytes.Buffer
+	_, err := io.Copy(&buf, res.Body)
+	if err != nil {
+		return err
+	}
+
+	log.Info().Msgf(
+		"proxied rpc response:\n\trpc: %s\n\theaders: %s\n\tstatus: %d\n\tbody: %s",
+		rpcURL,
+		string(resHeadersBytes),
+		res.StatusCode,
+		buf.String(),
+	)
+
+	res.Body = ioutil.NopCloser(bytes.NewBuffer(buf.Bytes()))
+
+	return nil
 }

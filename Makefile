@@ -17,3 +17,6 @@ build:
 
 run:
 	go run cmd/zeth/*.go
+
+data:
+	./scripts/register_nodes.sh

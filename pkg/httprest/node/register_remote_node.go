@@ -62,6 +62,7 @@ func (h *nodesHandler) registerRemoteNode(w http.ResponseWriter, r *http.Request
 			ID:        uuid.NewV4(),
 			Name:      payload.Name,
 			NodeType:  node.TypeRemoteNode,
+			Enabled:   true,
 			DateAdded: time.Now().UTC(),
 		},
 		RPC: node.RPC{

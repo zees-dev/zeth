@@ -29,7 +29,7 @@ export interface Node {
 	name: string
 	nodeType: number
 	isDev: boolean
-	running: boolean
+	enabled: boolean
 	rpc: {
 		http: string
 		ws: string

@@ -22,6 +22,7 @@ func NewRemoteNode(httpRPCURL, wsRPCURL string) *RemoteNode {
 		ZethNode: ZethNode{
 			ID:       uuid.NewV4(),
 			NodeType: TypeRemoteNode,
+			Enabled:  true,
 		},
 		RPC: RPC{
 			HTTP: httpRPCURL,

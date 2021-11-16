@@ -93,7 +93,7 @@ func (app *App) Configure() error {
 	}
 	for _, n := range nodes {
 		props := n.Properties()
-		if props.NodeType == node.TypeGethNodeInProcess && props.Running {
+		if props.NodeType == node.TypeGethNodeInProcess && props.Enabled {
 			gipNode := n.(interface{}).(*node.GethInProcessNode)
 			log.Info().Msgf("Starting node: %s", props.ID)
 			err = gipNode.Start(context.TODO())

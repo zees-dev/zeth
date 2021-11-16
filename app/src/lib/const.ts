@@ -36,5 +36,19 @@ export const EthNetworks: { [id: number]: string } = {
   2018: 'Dev',
 }
 
-// BSC testnets
+// BSC
 // source: https://docs.binance.org/smart-chain/wallet/metamask.html
+export const BSCNetworks: { [id: number]: string } = {
+  56: 'BSC Mainnet',
+  97: 'BSC - testnet',
+}
+
+// Ava
+export const AvaNetworks: { [id: number]: string } = {
+  43114: 'Avalanche Mainnet',
+}
+
+// Fantom
+export const FTMNetworks: { [id: number]: string } = {
+  250: 'Fantom Mainnet',
+}

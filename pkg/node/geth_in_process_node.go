@@ -98,7 +98,7 @@ func (n *GethInProcessNode) Start(ctx context.Context) error {
 	n.mux.Lock()
 	defer n.mux.Unlock()
 
-	n.Running = true
+	n.Enabled = true
 
 	stack, err := node.New(&n.GethConfig.Node)
 	if err != nil {
@@ -150,6 +150,6 @@ func (n *GethInProcessNode) Stop(ctx context.Context) error {
 	n.mux.Lock()
 	defer n.mux.Unlock()
 
-	n.Running = false
+	n.Enabled = false
 	return n.stack.Close()
 }

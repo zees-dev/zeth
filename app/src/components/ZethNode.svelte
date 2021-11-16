@@ -3,7 +3,7 @@
 	import { navigate } from 'svelte-routing'
 	import { settingsStore } from '../stores'
 	import { fetchData } from '../stores/http'
-	import { nodesURL, httpNodeRPCURL, NodeType, EthNetworks } from '../lib/const'
+	import { nodesURL, httpNodeRPCURL, NodeType, EthNetworks, BSCNetworks, AvaNetworks, FTMNetworks } from '../lib/const'
 	import type { NodesResponse, Node, SyncStatus } from '../lib/types'
 	import SyncIndicator from './SyncIndicator.svelte'
 	import BlockSyncBar from './BlockSyncBar.svelte'
@@ -15,15 +15,7 @@
 		version: string
 		syncing: SyncStatus
 		peers: number
-		modules: {
-			admin: string
-			debug: string
-			eth: string
-			net: string
-			personal: string
-			rpc: string
-			web3: string
-		}
+		modules: [string, string][]
 		mining: boolean
 		isDefault: boolean
 	}
@@ -31,57 +23,61 @@
 	const [nodes] = fetchData<NodesResponse>(nodesURL)
 
 	async function getNodeDataFromRPC(nodes: Node[]): Promise<ProviderNode[]> {
-		const nodeList = await Promise.all(
-			nodes.map(async (n) => {
-				const provider = new ethers.providers.JsonRpcProvider(httpNodeRPCURL(n.id))
-				const [networkP, blockP, versionP, syncingP, peersP, modulesP, miningP] = await Promise.allSettled([
-					provider.getNetwork(),
-					provider.getBlockNumber(),
-					provider.send('web3_clientVersion', []),
-					provider.send('eth_syncing', []),
-					provider.send('net_peerCount', []),
-					provider.send('rpc_modules', []),
-					provider.send('eth_mining', [])
-				])
+		const enabledNodeList = await Promise.all(
+			nodes
+				.filter((n) => n.enabled)
+				.map(async (n) => {
+					const provider = new ethers.providers.JsonRpcProvider(httpNodeRPCURL(n.id))
+					const [networkP, blockP, versionP, syncingP, peersP, modulesP, miningP] = await Promise.allSettled([
+						provider.getNetwork(),
+						provider.getBlockNumber(),
+						provider.send('web3_clientVersion', []),
+						provider.send('eth_syncing', []),
+						provider.send('net_peerCount', []),
+						provider.send('rpc_modules', []),
+						provider.send('eth_mining', [])
+					])
 
-				const pNode = n as ProviderNode
+					const pNode = n as ProviderNode
 
-				if (networkP.status === 'fulfilled') {
-					pNode.network = networkP.value
-					pNode.connected = true
-				}
-				if (blockP.status === 'fulfilled') {
-					pNode.block = blockP.value
-				}
-				if (versionP.status === 'fulfilled') {
-					pNode.version = versionP.value
-				}
-				if (syncingP.status === 'fulfilled') {
-					pNode.syncing = syncingP.value
-				}
-				if (peersP.status === 'fulfilled') {
-					pNode.peers = parseInt(peersP.value, 16)
-				}
-				if (modulesP.status === 'fulfilled') {
-					pNode.modules = modulesP.value
-				}
-				if (miningP.status === 'fulfilled') {
-					pNode.mining = miningP.value
-				}
+					if (networkP.status === 'fulfilled') {
+						pNode.network = networkP.value
+						pNode.connected = true
+					}
+					if (blockP.status === 'fulfilled') {
+						pNode.block = blockP.value
+					}
+					if (versionP.status === 'fulfilled') {
+						pNode.version = versionP.value
+					}
+					if (syncingP.status === 'fulfilled') {
+						pNode.syncing = syncingP.value
+					}
+					if (peersP.status === 'fulfilled') {
+						pNode.peers = parseInt(peersP.value, 16)
+					}
+					if (modulesP.status === 'fulfilled') {
+						pNode.modules = modulesP.value
+					}
+					if (miningP.status === 'fulfilled') {
+						pNode.mining = miningP.value
+					}
 
-				pNode.isDefault = $settingsStore.nodeSettings.defaultNodeID === pNode.id
-				return pNode
-			})
+					pNode.isDefault = $settingsStore.nodeSettings.defaultNodeID === pNode.id
+					return pNode
+				})
 		)
-		return nodeList
+		const disabledNodeList = nodes.filter((n) => !n.enabled) as ProviderNode[]
+		return [...enabledNodeList, ...disabledNodeList]
 	}
 
-	function getEthNetworkName(chainId: number) {
+	function getNetworkName(chainId: number) {
 		// TODO: account for other non-eth chains
-		return EthNetworks[chainId]
+		return EthNetworks[chainId] ?? BSCNetworks[chainId] ?? AvaNetworks[chainId] ?? FTMNetworks[chainId]
 	}
 
 	function getNodeSyncStatus(node: ProviderNode) {
+		debugger
 		if (node.syncing) {
 			return 'syncing'
 		}
@@ -92,17 +88,23 @@
 	}
 
 	/**
-	 * getSemanticVersion returns the geth version as a semantic version from the version string.
-	 * It gets the string between first '/' and '-' characters.
+	 * getVersion returns the geth version from the version string.
+	 * It gets the string between first '/' and second '/' characters.
 	 * @param gethVersion example: "Geth/v1.10.9-omnibus-e03773e6/linux-amd64/go1.17.2"
-	 * @returns example: "v1.10.9"
+	 * @returns example: "v1.10.9-omnibus-e03773e6"
 	 */
-	function getSemanticVersion(gethVersion: string) {
-		return gethVersion.substring(gethVersion.indexOf('/') + 1, gethVersion.indexOf('-'))
+	function getVersion(gethVersion: string) {
+		return gethVersion.split('/')[1] ?? gethVersion
 	}
 
 	function dateWithoutTZ(date: Date) {
 		return date.toString().substring(0, date.toString().indexOf('GMT') - 1)
+	}
+
+	function getSortedModules(modules: [string, string][]) {
+		return Object.keys(modules)
+			.sort()
+			.map((key: string) => ({ module: key, version: modules[key as any] }))
 	}
 
 	let nodeList: ProviderNode[] = []
@@ -143,24 +145,26 @@
 			<div class="pl-6 pr-2 pb card-content-grid">
 				<div class="text-sm flex place-items-center span-column">
 					<p>Network ID: {node.network?.chainId ?? '-'}</p>
-					{#if getEthNetworkName(node.network?.chainId)}
-						<p class="badge badge-sm badge-info mx-2">{getEthNetworkName(node.network.chainId)}</p>
+					{#if getNetworkName(node.network?.chainId)}
+						<p class="badge badge-sm badge-info mx-2">{getNetworkName(node.network.chainId)}</p>
 					{/if}
 				</div>
-				<div class="text-sm flex place-items-center">
-					<p>RPC modules:</p>
-					{#if node.modules}
-						{#each Object.entries(node.modules) as [module, version]}
-							<p class="badge badge-sm mx-2">{module}: {version}</p>
-						{/each}
-					{:else}
-						<p class="badge badge-sm badge-warning mx-2">unknown</p>
-					{/if}
-				</div>
-				<div data-tip={node.version} class="tooltip justify-self-end">
+				<div data-tip={node.version} class="tooltip flex span-column">
 					<p class="text-sm">
-						Version: {(node.version && getSemanticVersion(node.version)) || '-'}
+						Version: {(node.version && getVersion(node.version)) || '-'}
 					</p>
+				</div>
+				<div class="text-sm flex span-column">
+					<p class="whitespace-nowrap">RPC modules:</p>
+					<div class="flex flex-wrap gap-2">
+						{#if node.modules}
+							{#each getSortedModules(node.modules) as { module, version }}
+								<p class="badge first:ml-1 h-6 bg-yellow-400">{module}<sup>{version}</sup></p>
+							{/each}
+						{:else}
+							<p class="badge ml-1 h-6 badge-warning">unknown</p>
+						{/if}
+					</div>
 				</div>
 				<p class="text-sm">Peers: {node.peers ?? '-'}</p>
 				<p class="text-sm justify-self-end">Date added: {dateWithoutTZ(new Date(node.dateAdded)) ?? '-'}</p>
@@ -182,6 +186,6 @@
 
 	.card-content-grid {
 		display: grid;
-		grid-template: 1fr 1fr / 1fr 1fr;
+		grid-template: 1fr 1fr / auto auto;
 	}
 </style>

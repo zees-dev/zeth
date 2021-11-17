@@ -51,6 +51,9 @@ export const EthNetworks: { [id: number]: string } = {
 
   // Fantom
   250: 'Fantom',
+
+  // Harmony
+  1666600000: 'Harmony',
 }
 
 

@@ -30,3 +30,8 @@ curl -X POST \
 	-H "Content-Type: application/json" \
 	-d '{"name": "fantom mainnet", "httpRPCURL": "https://rpc.ftm.tools/", "test": true }' \
 	http://localhost:7000/api/v1/nodes/remote
+
+curl -X POST \
+	-H "Content-Type: application/json" \
+	-d '{"name": "polygon mainnet", "httpRPCURL": "https://polygon-rpc.com/", "test": true }' \
+	http://localhost:7000/api/v1/nodes/remote

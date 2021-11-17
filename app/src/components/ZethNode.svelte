@@ -3,7 +3,7 @@
 	import { navigate } from 'svelte-routing'
 	import { settingsStore } from '../stores'
 	import { fetchData } from '../stores/http'
-	import { nodesURL, httpNodeRPCURL, NodeType, EthNetworks, BSCNetworks, AvaNetworks, FTMNetworks } from '../lib/const'
+	import { nodesURL, httpNodeRPCURL, NodeType, EthNetworks } from '../lib/const'
 	import type { NodesResponse, Node, SyncStatus } from '../lib/types'
 	import SyncIndicator from './SyncIndicator.svelte'
 	import BlockSyncBar from './BlockSyncBar.svelte'
@@ -73,7 +73,7 @@
 
 	function getNetworkName(chainId: number) {
 		// TODO: account for other non-eth chains
-		return EthNetworks[chainId] ?? BSCNetworks[chainId] ?? AvaNetworks[chainId] ?? FTMNetworks[chainId]
+		return EthNetworks[chainId]
 	}
 
 	function getNodeSyncStatus(node: ProviderNode) {

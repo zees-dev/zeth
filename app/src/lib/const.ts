@@ -29,26 +29,28 @@ export enum NetworkType {
 // goerli	ETH	5	5	Test
 // dev	ETH	2018	2018	Development
 export const EthNetworks: { [id: number]: string } = {
+  // Eth networks
   1: 'Mainnet',
   3: 'Ropsten',
   4: 'Rinkeby',
   5: 'Goerli',
   2018: 'Dev',
-}
 
-// BSC
-// source: https://docs.binance.org/smart-chain/wallet/metamask.html
-export const BSCNetworks: { [id: number]: string } = {
-  56: 'BSC Mainnet',
+  // Binance Smart Chain
+  // source: https://docs.binance.org/smart-chain/wallet/metamask.html
+  56: 'Binance Smart Chain',
   97: 'BSC - testnet',
+
+  // Polygon
+  // source: https://docs.polygon.io/docs/polygon-node-setup
+  137: 'Polygon',
+
+  // Avalanche
+  // source: https://docs.avalanche.io/docs/avalanche-node-setup
+  43114: 'Avalanche',
+
+  // Fantom
+  250: 'Fantom',
 }
 
-// Ava
-export const AvaNetworks: { [id: number]: string } = {
-  43114: 'Avalanche Mainnet',
-}
 
-// Fantom
-export const FTMNetworks: { [id: number]: string } = {
-  250: 'Fantom Mainnet',
-}

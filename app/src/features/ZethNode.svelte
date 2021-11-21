@@ -3,9 +3,9 @@
 	import { navigate } from 'svelte-routing'
 	import { settingsStore } from '../stores'
 	import { httpNodeRPCURL, NodeType, EthNetworks } from '../lib/const'
-	import type { Node, SyncStatus } from '../lib/types'
-	import SyncIndicator from './SyncIndicator.svelte'
-	import BlockSyncBar from './BlockSyncBar.svelte'
+	import type { Node, SyncStatus } from '../types'
+	import SyncIndicator from '../components/SyncIndicator.svelte'
+	import BlockSyncBar from '../components/BlockSyncBar.svelte'
 
 	export let node: Node
 

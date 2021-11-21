@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { SyncStatus } from '../lib/types'
+	import type { SyncStatus } from '../types'
 
 	export let syncing: SyncStatus
 	export let blockNumber: number

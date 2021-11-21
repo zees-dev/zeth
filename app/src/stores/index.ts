@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store'
-import type { SettingsResponse } from '../lib/types'
+import type { SettingsResponse } from '../types'
 import { settingsURL, rpcNodeURL } from '../lib/const'
 import { ethers } from 'ethers'
 

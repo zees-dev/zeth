@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { fetchData } from '../stores/http'
-	import { nodesURL, httpNodeRPCURL, NodeType, EthNetworks } from '../lib/const'
-	import type { NodesResponse, Node, SyncStatus } from '../lib/types'
-	import ZethNode from '../components/ZethNode.svelte'
+	import { nodesURL } from '../lib/const'
+	import type { NodesResponse, Node } from '../types'
+	import ZethNode from '../features/ZethNode.svelte'
 
 	const [nodes] = fetchData<NodesResponse>(nodesURL)
 

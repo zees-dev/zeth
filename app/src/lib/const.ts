@@ -45,12 +45,15 @@ export const EthNetworks: { [id: number]: string } = {
   // source: https://docs.polygon.io/docs/polygon-node-setup
   137: 'Polygon',
 
+  // Fantom
+  250: 'Fantom',
+
+  // local dev mode
+  1337: 'DEV',
+
   // Avalanche
   // source: https://docs.avalanche.io/docs/avalanche-node-setup
   43114: 'Avalanche',
-
-  // Fantom
-  250: 'Fantom',
 
   // Harmony
   1666600000: 'Harmony',

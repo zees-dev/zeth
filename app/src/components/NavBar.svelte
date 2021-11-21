@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { utils } from 'ethers'
-	import { ethersProvider } from '../stores'
+	import { ethersProvider } from '../stores/Settings'
 	import { EthNetworks } from '../lib/const'
 
 	const username = 'john'

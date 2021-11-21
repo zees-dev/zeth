@@ -62,12 +62,11 @@ func (id NetworkID) IsSupported() bool {
 }
 
 type ZethNode struct {
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	NodeType NodeType  `json:"nodeType"`
-	IsDev    bool      `json:"isDev"`
-	Enabled  bool      `json:"enabled"`
-
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	NodeType  NodeType  `json:"nodeType"`
+	IsDev     bool      `json:"isDev"`
+	Enabled   bool      `json:"enabled"`
 	DateAdded time.Time `json:"dateAdded"`
 }
 

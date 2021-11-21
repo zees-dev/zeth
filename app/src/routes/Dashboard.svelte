@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { fetchData } from '../stores/http'
 	import { nodesURL } from '../lib/const'
-	import type { NodesResponse, Node } from '../types'
-	import ZethNode from '../features/ZethNode.svelte'
+	import type { NodesListResponse, NodeResponse } from '../types'
+	import ZethNode from '../features/ZethNode/ZethNode.svelte'
 
-	const [nodes] = fetchData<NodesResponse>(nodesURL)
+	const [nodes] = fetchData<NodesListResponse>(nodesURL)
 
-	let nodeList: Node[] = []
+	let nodeList: NodeResponse[] = []
 	$: {
 		if ($nodes.data.response?.nodes) {
 			nodeList = $nodes.data.response.nodes.sort((a, b) => +new Date(a.dateAdded) - +new Date(b.dateAdded))
@@ -17,7 +17,7 @@
 <section>
 	<h1>Dashboard</h1>
 
-	{#each nodeList as node}
-		<ZethNode bind:node />
+	{#each nodeList as nodeResponse}
+		<ZethNode bind:nodeResponse />
 	{/each}
 </section>

@@ -1,13 +1,15 @@
 <script lang="ts">
 	import type { SyncStatus } from '../types'
 
-	export let syncing: SyncStatus
+	export let syncing: SyncStatus | boolean
 	export let blockNumber: number
 
 	let syncPercentage = '0'
+	let sync: SyncStatus
 	$: {
 		if (syncing) {
-			syncPercentage = ((parseInt(syncing.currentBlock, 16) / parseInt(syncing.highestBlock, 16)) * 100).toFixed(2)
+			sync = syncing as SyncStatus
+			syncPercentage = ((parseInt(sync.currentBlock, 16) / parseInt(sync.highestBlock, 16)) * 100).toFixed(2)
 		}
 	}
 </script>
@@ -21,7 +23,7 @@
 		</div>
 		<div class="w-full bg-gray-200 rounded-full">
 			<div class="absolute w-full p-0.5 text-center text-blue-500 text-xs font-medium">
-				{parseInt(syncing.currentBlock, 16)} / {parseInt(syncing.highestBlock, 16)}
+				{parseInt(sync.currentBlock, 16)} / {parseInt(sync.highestBlock, 16)}
 			</div>
 			<div
 				class="bg-blue-600 text-xs font-medium text-blue-500 text-center p-0.5 leading-none rounded-full"

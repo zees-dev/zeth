@@ -22,8 +22,21 @@ export interface SyncStatus {
   startingBlock: string
 }
 
+export interface RPCModules {
+  [key: string | undefined]: string
+  admin?: string
+  clique?: string
+  debug?: string
+  eth?: string
+  miner?: string
+  net?: string
+  personal?: string
+  rpc?: string
+  txpool?: string
+  web3?: string
+}
 
-export interface Node {
+export interface NodeResponse {
   id: string
   dateAdded: string
   name: string
@@ -36,8 +49,8 @@ export interface Node {
   }
 }
 
-export interface NodesResponse {
-  nodes: Node[]
+export interface NodesListResponse {
+  nodes: NodeResponse[]
 }
 
 export type NetworkName = 'ETHEREUM' | 'BINANCE_SMART_CHAIN' | 'POLYGON'

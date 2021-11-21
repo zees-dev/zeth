@@ -7,6 +7,11 @@ curl -X POST \
 
 curl -X POST \
 	-H "Content-Type: application/json" \
+	-d '{"name": "local", "httpRPCURL": "http://localhost:8545", "test": true }' \
+	http://localhost:7000/api/v1/nodes/remote
+
+curl -X POST \
+	-H "Content-Type: application/json" \
 	-d '{"name": "bsc testnet", "httpRPCURL": "https://data-seed-prebsc-1-s1.binance.org:8545", "test": true }' \
 	http://localhost:7000/api/v1/nodes/remote
 

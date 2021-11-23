@@ -51,6 +51,10 @@ export const EthNetworks: { [id: number]: string } = {
   // local dev mode
   1337: 'DEV',
 
+  // Arbitrum
+  // source: https://developer.offchainlabs.com/docs/mainnet
+  42161: 'Arbitrum One',
+
   // Avalanche
   // source: https://docs.avalanche.io/docs/avalanche-node-setup
   43114: 'Avalanche',
@@ -58,5 +62,3 @@ export const EthNetworks: { [id: number]: string } = {
   // Harmony
   1666600000: 'Harmony',
 }
-
-

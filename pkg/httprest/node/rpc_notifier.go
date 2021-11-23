@@ -11,6 +11,13 @@ import (
 
 // source: https://gist.github.com/rikonor/e53a33c27ed64861c91a095a59f0aa44
 
+type PubSub interface {
+	Publisher
+	Subscriber
+}
+
+var _ PubSub = (*NotificationCenter)(nil)
+
 type UnsubscribeFunc func() error
 
 type Subscriber interface {
@@ -61,11 +68,6 @@ func (nc *NotificationCenter) Publish(b []byte) error {
 	}
 
 	return nil
-}
-
-type PubSub interface {
-	Publisher
-	Subscriber
 }
 
 type NodeRPCMonitor struct {

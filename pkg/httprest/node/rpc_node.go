@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -49,7 +50,9 @@ func (h *nodesHandler) rpcNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// serve the reverse proxy
-	proxy, err := getNodeReverseProxy(rpcURLs, r)
+	nc := NewNotificationCenter()
+	h.nodeRPCMonitor.rpcs[uid] = nc
+	proxy, err := createNodeReverseProxy(rpcURLs, h.nodeRPCMonitor.rpcs[uid], r)
 	if err != nil {
 		http.Error(w, rest.HTTPInternalServerError, http.StatusInternalServerError)
 	}
@@ -95,8 +98,8 @@ func (h *nodesHandler) getRPC(r *http.Request, uuid uuid.UUID) (node.RPC, error)
 	return node.RPC{HTTP: httpRPCURL, WS: websocketRPCURL}, nil
 }
 
-// getNodeReverseProxy gets the relevant http or websocket reverse-proxy for the calling request.
-func getNodeReverseProxy(rpc node.RPC, r *http.Request) (http.Handler, error) {
+// createNodeReverseProxy gets the relevant http or websocket reverse-proxy for the calling request.
+func createNodeReverseProxy(rpc node.RPC, publisher Publisher, r *http.Request) (http.Handler, error) {
 	var proxy http.Handler
 
 	// Override http/websocket reverse proxies to support https/wss - https://stackoverflow.com/a/53007606/10813908
@@ -112,7 +115,6 @@ func getNodeReverseProxy(rpc node.RPC, r *http.Request) (http.Handler, error) {
 			r.Host = url.Host // set Host header as expected by target
 			r.URL.Scheme = url.Scheme
 			r.URL.Path = url.Path
-			modifyRequest(r, rpc.WS)
 		}
 		// p.Transport = rpcRoundTripper{rpc.WS}
 		proxy = p
@@ -131,7 +133,7 @@ func getNodeReverseProxy(rpc node.RPC, r *http.Request) (http.Handler, error) {
 			r.URL.Path = url.Path
 			r.Host = url.Host // set Host header as expected by target
 		}
-		p.Transport = rpcRoundTripper{rpc.HTTP}
+		p.Transport = rpcRoundTripper{rpcURL: rpc.HTTP, publisher: publisher}
 		proxy = p
 	}
 
@@ -141,71 +143,122 @@ func getNodeReverseProxy(rpc node.RPC, r *http.Request) (http.Handler, error) {
 	return proxy, nil
 }
 
-// rpcRoundTripper satisfies the http.RoundTripper interface
-type rpcRoundTripper struct {
-	rpcURL string
+type callType int
+
+const (
+	_ callType = iota
+	request
+	response
+)
+
+type RPCEvent struct {
+	ID         string   `json:"id"`
+	URI        string   `json:"uri"`
+	RPCURL     string   `json:"rpcURL"`
+	Type       callType `json:"type"` // 1=request, 2=response
+	Headers    string   `json:"headers"`
+	Body       string   `json:"body"`
+	StatusCode int      `json:"statusCode,omitempty"`
+	Duration   int64    `json:"duration,omitempty"` // duration in milliseconds
 }
 
-// RoundTrip satisfies the http.RoundTripper interface
-// This allows us to simply log and/or modify the request end-to-end
-func (rt rpcRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
-	log.Printf("request received. url=%s", r.URL)
-	defer log.Printf("request complete. url=%s", r.URL)
+func NewRPCEvent(rpcURL string) *RPCEvent {
+	return &RPCEvent{ID: uuid.NewV4().String(), RPCURL: rpcURL}
+}
 
-	modifyRequest(r, rt.rpcURL)
-
-	res, err := http.DefaultTransport.RoundTrip(r)
-	if err != nil {
-		return nil, err
+func (ev *RPCEvent) String() string {
+	// request string
+	if ev.Type == request {
+		return fmt.Sprintf(
+			"proxying rpc request:\n\treq: %s\n\trpc: %s\n\theaders: %s\n\tbody: %s",
+			ev.URI,
+			ev.RPCURL,
+			ev.Headers,
+			ev.Body,
+		)
 	}
 
-	modifyResponse(res, rt.rpcURL)
-
-	return res, nil
+	// response string
+	return fmt.Sprintf(
+		"proxied rpc response:\n\trpc: %s\n\theaders: %s\n\tstatus: %d\n\tbody: %s\n\tduration: %d",
+		ev.RPCURL,
+		ev.Headers,
+		ev.StatusCode,
+		ev.Body,
+		ev.Duration,
+	)
 }
 
-// modifyRequest set x-forwarded-host header to flag this request as proxied
-func modifyRequest(r *http.Request, rpcURL string) {
-	r.Header.Set("Host", r.Host)
-	// r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
-
-	// log request
+func (ev *RPCEvent) ParseRequest(r *http.Request) {
 	reqHeadersBytes, _ := json.Marshal(r.Header)
 
 	var buf bytes.Buffer
 	io.Copy(&buf, r.Body)
 	// r.Body.Close() //  must close
-	log.Info().Msgf(
-		"proxying rpc request:\n\treq: %s\n\trpc: %s\n\theaders: %s\n\tbody: %s",
-		r.RequestURI,
-		rpcURL,
-		string(reqHeadersBytes),
-		buf.String(),
-	)
+
+	// set event request properties
+	ev.Type = request
+	ev.URI = r.RequestURI
+	ev.Headers = string(reqHeadersBytes)
+	ev.Body = buf.String()
+
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(buf.Bytes()))
 }
 
-// modifyResponse logs the response
-// source: https://daryl-ng.medium.com/why-you-should-avoid-ioutil-readall-in-go-e6be4de180f8
-func modifyResponse(res *http.Response, rpcURL string) error {
-	// log response
+func (ev *RPCEvent) ParseResponse(res *http.Response) {
 	resHeadersBytes, _ := json.Marshal(res.Header)
 
 	var buf bytes.Buffer
-	_, err := io.Copy(&buf, res.Body)
-	if err != nil {
-		return err
-	}
+	io.Copy(&buf, res.Body)
 
-	log.Info().Msgf(
-		"proxied rpc response:\n\trpc: %s\n\theaders: %s\n\tstatus: %d\n\tbody: %s",
-		rpcURL,
-		string(resHeadersBytes),
-		res.StatusCode,
-		buf.String(),
-	)
+	// set event response properties
+	ev.Type = response
+	ev.Headers = string(resHeadersBytes)
+	ev.StatusCode = res.StatusCode
+	ev.Body = buf.String()
 
 	res.Body = ioutil.NopCloser(bytes.NewBuffer(buf.Bytes()))
+}
 
-	return nil
+func (ev RPCEvent) Bytes() []byte {
+	b := new(bytes.Buffer)
+	json.NewEncoder(b).Encode(ev)
+	return b.Bytes()
+}
+
+// rpcRoundTripper satisfies the http.RoundTripper interface
+type rpcRoundTripper struct {
+	rpcURL    string
+	publisher Publisher
+}
+
+// RoundTrip satisfies the http.RoundTripper interface
+// During roundtrip, we modify request header, publish RPC'ed request and response to subscribers
+func (rt rpcRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+	reqStartTime := time.Now()
+
+	// modify request headers
+	r.Header.Set("Host", r.Host)
+	// r.Header.Set("X-Forwarded-Host", r.Header.Get("Host"))
+
+	event := NewRPCEvent(rt.rpcURL)
+
+	// parse request, log request, publish to subscriber
+	event.ParseRequest(r)
+	log.Info().Msg(event.String())
+	rt.publisher.Publish(event.Bytes())
+
+	// perform roundtrip against actual underlying rpc endpoint
+	res, err := http.DefaultTransport.RoundTrip(r)
+	if err != nil {
+		return nil, err
+	}
+
+	// parse response, calc duration, log response, publish to subscriber
+	event.ParseResponse(res)
+	event.Duration = time.Since(reqStartTime).Milliseconds()
+	log.Info().Msg(event.String())
+	rt.publisher.Publish(event.Bytes())
+
+	return res, nil
 }

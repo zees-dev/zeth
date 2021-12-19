@@ -1,5 +1,6 @@
-import type { SyncStatus, NodeResponse, RPCModules } from '../../types'
 import { ethers } from 'ethers'
+import type { SyncStatus, NodeResponse, RPCModules } from '../../types'
+import { EthNetworks } from '../../lib/const'
 
 export class Node {
   id: string
@@ -12,6 +13,7 @@ export class Node {
     http: string
     ws: string
   }
+  explorerUrl: string
 
   httpProvider?: ethers.providers.JsonRpcProvider
   connected: boolean
@@ -26,7 +28,7 @@ export class Node {
 
   constructor(nodeResponse: NodeResponse) {
     // fields set from API request
-    const { id, dateAdded, name, nodeType, isDev, enabled, rpc } = nodeResponse
+    const { id, dateAdded, name, nodeType, isDev, enabled, rpc, explorerUrl } = nodeResponse
     this.id = id
     this.dateAdded = dateAdded
     this.name = name
@@ -34,6 +36,7 @@ export class Node {
     this.isDev = isDev
     this.enabled = enabled
     this.rpc = rpc
+    this.explorerUrl = explorerUrl
 
     this.connected = false
     this.block = 0
@@ -61,7 +64,7 @@ export class Node {
       this.httpProvider.send('eth_syncing', []),
       this.httpProvider.send('net_peerCount', []),
       this.httpProvider.send('rpc_modules', []),
-      this.httpProvider.send('eth_mining', [])
+      this.httpProvider.send('eth_mining', []),
     ])
 
     if (networkP.status === 'fulfilled') {
@@ -90,4 +93,57 @@ export class Node {
     return this
   }
 
+  async getCoinbase() {
+    if (!this.httpProvider) {
+      throw new Error("JsonRpcProvider required")
+    }
+
+    try {
+      const coinbase = (await this.httpProvider.send('eth_coinbase', []) as string)
+      return coinbase
+    } catch (err) {
+      console.error(err)
+      // TODO: notify
+    }
+  }
+
+}
+
+
+export function getNetworkName(chainId: number) {
+  // TODO: account for other non-eth chains
+  return EthNetworks[chainId]
+}
+
+export function getNodeSyncStatus(node: Node) {
+  if (!node.connected) {
+    return undefined
+  }
+  if (node.syncing) {
+    return 'syncing'
+  }
+  if (node.syncing === undefined) {
+    return undefined
+  }
+  return 'synced'
+}
+
+/**
+ * getVersion returns the geth version from the version string.
+ * It gets the string between first '/' and second '/' characters.
+ * @param gethVersion example: "Geth/v1.10.9-omnibus-e03773e6/linux-amd64/go1.17.2"
+ * @returns example: "v1.10.9-omnibus-e03773e6"
+ */
+export function getVersion(gethVersion: string) {
+  return gethVersion.split('/')[1] ?? gethVersion
+}
+
+export function dateWithoutTZ(date: Date) {
+  return date.toString().substring(0, date.toString().indexOf('GMT') - 1)
+}
+
+export function getSortedModules(modules: RPCModules) {
+  return Object.keys(modules)
+    .sort()
+    .map((key: string) => ({ module: key, version: modules[key as any] }))
 }

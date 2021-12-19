@@ -2,6 +2,7 @@ package node
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -152,41 +153,24 @@ const (
 )
 
 type RPCEvent struct {
-	ID         string   `json:"id"`
-	URI        string   `json:"uri"`
-	RPCURL     string   `json:"rpcURL"`
-	Type       callType `json:"type"` // 1=request, 2=response
-	Headers    string   `json:"headers"`
-	Body       string   `json:"body"`
-	StatusCode int      `json:"statusCode,omitempty"`
-	Duration   int64    `json:"duration,omitempty"` // duration in milliseconds
+	ID      string `json:"id"`
+	URI     string `json:"uri"`
+	RPCURL  string `json:"rpcURL"`
+	Request struct {
+		Headers string `json:"headers"`
+		Body    string `json:"body"`
+	} `json:"request"`
+	Response struct {
+		Headers string `json:"headers"`
+		Body    string `json:"body"`
+		// Body       map[string]interface{} `json:"body"`
+		StatusCode int `json:"statusCode"`
+	} `json:"response"`
+	Duration int64 `json:"duration,omitempty"` // duration in milliseconds
 }
 
 func NewRPCEvent(rpcURL string) *RPCEvent {
 	return &RPCEvent{ID: uuid.NewV4().String(), RPCURL: rpcURL}
-}
-
-func (ev *RPCEvent) String() string {
-	// request string
-	if ev.Type == request {
-		return fmt.Sprintf(
-			"proxying rpc request:\n\treq: %s\n\trpc: %s\n\theaders: %s\n\tbody: %s",
-			ev.URI,
-			ev.RPCURL,
-			ev.Headers,
-			ev.Body,
-		)
-	}
-
-	// response string
-	return fmt.Sprintf(
-		"proxied rpc response:\n\trpc: %s\n\theaders: %s\n\tstatus: %d\n\tbody: %s\n\tduration: %d",
-		ev.RPCURL,
-		ev.Headers,
-		ev.StatusCode,
-		ev.Body,
-		ev.Duration,
-	)
 }
 
 func (ev *RPCEvent) ParseRequest(r *http.Request) {
@@ -197,10 +181,9 @@ func (ev *RPCEvent) ParseRequest(r *http.Request) {
 	// r.Body.Close() //  must close
 
 	// set event request properties
-	ev.Type = request
 	ev.URI = r.RequestURI
-	ev.Headers = string(reqHeadersBytes)
-	ev.Body = buf.String()
+	ev.Request.Headers = string(reqHeadersBytes)
+	ev.Request.Body = buf.String()
 
 	r.Body = ioutil.NopCloser(bytes.NewBuffer(buf.Bytes()))
 }
@@ -212,10 +195,24 @@ func (ev *RPCEvent) ParseResponse(res *http.Response) {
 	io.Copy(&buf, res.Body)
 
 	// set event response properties
-	ev.Type = response
-	ev.Headers = string(resHeadersBytes)
-	ev.StatusCode = res.StatusCode
-	ev.Body = buf.String()
+	ev.Response.Headers = string(resHeadersBytes)
+	ev.Response.StatusCode = res.StatusCode
+
+	var responseBody string
+	// check res header for content-encoding; if gzip, decompress the response body
+	if res.Header.Get("Content-Encoding") == "gzip" {
+		gzipReader, err := gzip.NewReader(bytes.NewReader(buf.Bytes()))
+		if err != nil {
+			log.Debug().Err(err).Msg("failed to decompress response body")
+		}
+		// read decompressed response body
+		var decompressedBody bytes.Buffer
+		io.Copy(&decompressedBody, gzipReader)
+		responseBody = decompressedBody.String()
+	} else {
+		responseBody = buf.String()
+	}
+	ev.Response.Body = responseBody
 
 	res.Body = ioutil.NopCloser(bytes.NewBuffer(buf.Bytes()))
 }
@@ -245,7 +242,13 @@ func (rt rpcRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	// parse request, log request, publish to subscriber
 	event.ParseRequest(r)
-	log.Info().Msg(event.String())
+	log.Info().Msg(fmt.Sprintf(
+		"proxying rpc request:\n\treq: %s\n\trpc: %s\n\theaders: %s\n\tbody: %s",
+		event.URI,
+		event.RPCURL,
+		event.Request.Headers,
+		event.Request.Body,
+	))
 	rt.publisher.Publish(event.Bytes())
 
 	// perform roundtrip against actual underlying rpc endpoint
@@ -257,7 +260,14 @@ func (rt rpcRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 	// parse response, calc duration, log response, publish to subscriber
 	event.ParseResponse(res)
 	event.Duration = time.Since(reqStartTime).Milliseconds()
-	log.Info().Msg(event.String())
+	log.Info().Msg(fmt.Sprintf(
+		"proxied rpc response:\n\trpc: %s\n\theaders: %s\n\tstatus: %d\n\tbody: %s\n\tduration: %d",
+		event.RPCURL,
+		event.Response.Headers,
+		event.Response.StatusCode,
+		event.Response.Body,
+		event.Duration,
+	))
 	rt.publisher.Publish(event.Bytes())
 
 	return res, nil

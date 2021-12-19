@@ -14,7 +14,8 @@ type RPC struct {
 
 type RemoteNode struct {
 	ZethNode
-	RPC RPC `json:"rpc"`
+	RPC         RPC    `json:"rpc"`
+	ExplorerURL string `json:"explorerUrl"`
 }
 
 func NewRemoteNode(httpRPCURL, wsRPCURL string) *RemoteNode {

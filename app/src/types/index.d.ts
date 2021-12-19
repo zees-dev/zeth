@@ -43,6 +43,7 @@ export interface NodeResponse {
   nodeType: number
   isDev: boolean
   enabled: boolean
+  explorerUrl: string
   rpc: {
     http: string
     ws: string

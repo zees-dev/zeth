@@ -5,7 +5,14 @@
 	import { nodeStore } from '../../stores/Node'
 	import { httpNodeRPCURL, NodeType, EthNetworks } from '../../lib/const'
 	import type { NodeResponse, RPCModules } from '../../types'
-	import { Node } from '../../lib/Models/Node'
+	import {
+		Node,
+		getNodeSyncStatus,
+		getNetworkName,
+		getVersion,
+		getSortedModules,
+		dateWithoutTZ
+	} from '../../lib/Models/Node'
 	import SyncIndicator from '../../components/SyncIndicator.svelte'
 	import BlockSyncBar from '../../components/BlockSyncBar.svelte'
 
@@ -15,44 +22,6 @@
 	function handleClick(node: Node) {
 		nodeStore.set(node)
 		navigate(`/node/${node.id}`)
-	}
-
-	function getNetworkName(chainId: number) {
-		// TODO: account for other non-eth chains
-		return EthNetworks[chainId]
-	}
-
-	function getNodeSyncStatus(node: Node) {
-		if (!node.connected) {
-			return undefined
-		}
-		if (node.syncing) {
-			return 'syncing'
-		}
-		if (node.syncing === undefined) {
-			return undefined
-		}
-		return 'synced'
-	}
-
-	/**
-	 * getVersion returns the geth version from the version string.
-	 * It gets the string between first '/' and second '/' characters.
-	 * @param gethVersion example: "Geth/v1.10.9-omnibus-e03773e6/linux-amd64/go1.17.2"
-	 * @returns example: "v1.10.9-omnibus-e03773e6"
-	 */
-	function getVersion(gethVersion: string) {
-		return gethVersion.split('/')[1] ?? gethVersion
-	}
-
-	function dateWithoutTZ(date: Date) {
-		return date.toString().substring(0, date.toString().indexOf('GMT') - 1)
-	}
-
-	function getSortedModules(modules: RPCModules) {
-		return Object.keys(modules)
-			.sort()
-			.map((key: string) => ({ module: key, version: modules[key as any] }))
 	}
 
 	let node = new Node(nodeResponse)

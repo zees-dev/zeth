@@ -14,7 +14,7 @@
 	<main class="main">
 		<NavBar />
 		<Menu />
-		<section>
+		<section class="overflow-x-auto">
 			<Route path="node/:id" let:params>
 				<Node id={params.id} />
 			</Route>

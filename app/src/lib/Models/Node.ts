@@ -158,5 +158,5 @@ export function dateWithoutTZ(date: Date) {
 export function getSortedModules(modules: RPCModules) {
   return Object.keys(modules)
     .sort()
-    .map((key: string) => ({ module: key, version: modules[key as any] }))
+    .map((key: string) => ({ module: key, version: modules[key] }))
 }

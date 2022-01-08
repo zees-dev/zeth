@@ -61,4 +61,8 @@ export const EthNetworks: { [id: number]: string } = {
 
   // Harmony
   1666600000: 'Harmony',
+
+  // Aurora
+  // https://doc.aurora.dev/develop/networks
+  1313161554: 'Aurora',
 }

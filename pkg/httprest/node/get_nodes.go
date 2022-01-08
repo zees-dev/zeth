@@ -8,7 +8,7 @@ import (
 )
 
 type allNodesResponse struct {
-	Nodes []node.SupportedNode `json:"nodes"`
+	Nodes []node.ZethNode `json:"nodes"`
 }
 
 /* curl request:

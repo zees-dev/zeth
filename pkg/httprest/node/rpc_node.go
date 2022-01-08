@@ -70,7 +70,6 @@ func (h *nodesHandler) getRPC(r *http.Request, uuid uuid.UUID) (node.RPC, error)
 	var httpRPCURL, websocketRPCURL string
 
 	if n, err := h.nodes.Get(r.Context(), uuid); err == nil {
-		switch n.Properties().NodeType {
 		// case node.TypeGethNodeInProcess:
 		// 	// check request for `Upgrade` header to identify whether its http request or websocket
 		// 	gipNode := n.(*node.GethInProcessNode)
@@ -82,17 +81,12 @@ func (h *nodesHandler) getRPC(r *http.Request, uuid uuid.UUID) (node.RPC, error)
 		// 		scheme, host, port = "ws", gipNode.GethConfig.Node.WSHost, gipNode.GethConfig.Node.WSPort
 		// 	}
 		// 	rpcURL = fmt.Sprintf("%s://%s:%d", scheme, host, port)
-		case node.TypeRemoteNode:
-			remoteNode := n.(*node.RemoteNode)
-			if _, err := url.Parse(remoteNode.RPC.HTTP); err != nil {
-				return node.RPC{}, err
-			}
-			httpRPCURL = remoteNode.RPC.HTTP
-			if _, err := url.Parse(remoteNode.RPC.WS); err == nil {
-				websocketRPCURL = remoteNode.RPC.WS
-			}
-		default:
-			return node.RPC{}, fmt.Errorf("unsupported node type: %v", n.Properties().NodeType)
+		if _, err := url.Parse(n.RPC.HTTP); err != nil {
+			return node.RPC{}, err
+		}
+		httpRPCURL = n.RPC.HTTP
+		if _, err := url.Parse(n.RPC.WS); err == nil {
+			websocketRPCURL = n.RPC.WS
 		}
 	}
 

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -86,23 +85,6 @@ func (app *App) Configure() error {
 		}
 	}
 
-	// start any in-process nodes if they were previously running
-	nodes, err := app.Services.Nodes.GetAll(context.TODO())
-	if err != nil {
-		return errors.Wrap(err, "failed to get all nodes")
-	}
-	for _, n := range nodes {
-		props := n.Properties()
-		if props.NodeType == node.TypeGethNodeInProcess && props.Enabled {
-			gipNode := n.(interface{}).(*node.GethInProcessNode)
-			log.Info().Msgf("Starting node: %s", props.ID)
-			err = gipNode.Start(context.TODO())
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to start node: %s", props.ID))
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -120,10 +102,10 @@ func (app *App) Seed() error {
 }
 
 func (app *App) seedDefaultSettings() error {
-	defaultNode := node.NewRemoteNode(node.DefaultNodeHTTPRPC, node.DefaultNodeWSRPC)
+	defaultNode := node.NewNode(node.DefaultNodeHTTPRPC, node.DefaultNodeWSRPC)
 	defaultNode.Name = node.DefaultNodeName
 
-	_, err := app.Services.Nodes.Create(context.TODO(), defaultNode)
+	_, err := app.Services.Nodes.Create(context.TODO(), *defaultNode)
 	if err != nil {
 		return errors.Wrap(err, "failed to create default node")
 	}

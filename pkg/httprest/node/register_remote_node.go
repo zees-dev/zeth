@@ -50,21 +50,19 @@ curl -X POST \
 	-d '{"name": "test", "httpRPCURL": "http://localhost:8545"}' \
 	http://localhost:7000/api/v1/nodes/remote
 */
-func (h *nodesHandler) registerRemoteNode(w http.ResponseWriter, r *http.Request) {
+func (h *nodesHandler) createNode(w http.ResponseWriter, r *http.Request) {
 	payload := registerNodeRequestPayload{}
 	if ok := rest.DecodeAndValidateJSONPayload(w, r.Body, &payload); !ok {
 		log.Debug().Msg("validation failed")
 		return
 	}
 
-	remoteNode := node.RemoteNode{
-		ZethNode: node.ZethNode{
-			ID:        uuid.NewV4(),
-			Name:      payload.Name,
-			NodeType:  node.TypeRemoteNode,
-			Enabled:   true,
-			DateAdded: time.Now().UTC(),
-		},
+	remoteNode := node.ZethNode{
+		ID:        uuid.NewV4(),
+		Name:      payload.Name,
+		NodeType:  node.TypeRemoteNode,
+		Enabled:   true,
+		DateAdded: time.Now().UTC(),
 		RPC: node.RPC{
 			HTTP: payload.HTTPRPCURL,
 			WS:   payload.WebsocketRPCURL,
@@ -85,7 +83,7 @@ func (h *nodesHandler) registerRemoteNode(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	node, err := h.nodes.Create(r.Context(), &remoteNode)
+	node, err := h.nodes.Create(r.Context(), remoteNode)
 	if err != nil {
 		http.Error(w, rest.HTTPInternalServerError, http.StatusInternalServerError)
 		return
@@ -101,14 +99,11 @@ func (h *nodesHandler) remoteNodeAlreadyExists(ctx context.Context, payload regi
 		return false, err
 	}
 	for _, n := range nodes {
-		if n.Properties().NodeType == node.TypeRemoteNode {
-			rn := n.(*node.RemoteNode)
-			if rn.Name == payload.Name {
-				return true, nil
-			}
-			if rn.RPC.HTTP == payload.HTTPRPCURL {
-				return true, nil
-			}
+		if n.Name == payload.Name {
+			return true, nil
+		}
+		if n.RPC.HTTP == payload.HTTPRPCURL {
+			return true, nil
 		}
 	}
 	return false, nil

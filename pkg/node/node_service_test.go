@@ -26,15 +26,15 @@ func Test_NodeCrud(t *testing.T) {
 	nodesService := NewService(store)
 
 	t.Run("creating node assigns UUID", func(t *testing.T) {
-		n := GethInProcessNode{}
+		n := ZethNode{}
 		is.Equal(n.ID.String(), emptyUUIDV4)
-		is.Equal(n.Properties().ID.String(), emptyUUIDV4)
+		is.Equal(n.ID.String(), emptyUUIDV4)
 
-		n2, err := nodesService.Create(context.Background(), &n)
+		n2, err := nodesService.Create(context.Background(), n)
 		is.NoError(err)
 
-		is.NotEqual(n.Properties().ID.String(), emptyUUIDV4)
-		is.NotEqual(n2.Properties().ID.String(), emptyUUIDV4)
+		is.NotEqual(n.ID.String(), emptyUUIDV4)
+		is.NotEqual(n2.ID.String(), emptyUUIDV4)
 
 		store.DropAll()
 	})
@@ -44,7 +44,7 @@ func Test_NodeCrud(t *testing.T) {
 		_, err := nodesService.Create(context.Background(), &n)
 		is.NoError(err)
 
-		_, err = nodesService.Get(context.Background(), n.Properties().ID)
+		_, err = nodesService.Get(context.Background(), n.ID)
 		is.Error(err)
 
 		store.DropAll()
@@ -55,7 +55,7 @@ func Test_NodeCrud(t *testing.T) {
 		_, err := nodesService.Create(context.Background(), n)
 		is.NoError(err)
 
-		_, err = nodesService.Get(context.Background(), n.Properties().ID)
+		_, err = nodesService.Get(context.Background(), n.ID)
 		is.NoError(err)
 
 		store.DropAll()
@@ -73,7 +73,7 @@ func Test_NodeCrud(t *testing.T) {
 		s2, err := nodesService.Get(context.Background(), n.ID)
 		is.NoError(err)
 
-		is.NotEqual(n.ID, s2.Properties().ID)
+		is.NotEqual(n.ID, s2.ID)
 
 		store.DropAll()
 	})

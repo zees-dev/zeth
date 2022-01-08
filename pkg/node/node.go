@@ -8,11 +8,11 @@ import (
 )
 
 type NodeService interface {
-	Create(ctx context.Context, s SupportedNode) (SupportedNode, error)
-	Get(ctx context.Context, id uuid.UUID) (SupportedNode, error)
-	GetAll(ctx context.Context) ([]SupportedNode, error)
-	Update(ctx context.Context, id uuid.UUID, Node SupportedNode) error
-	Delete(ctx context.Context, id uuid.UUID) error
+	Create(context.Context, ZethNode) (ZethNode, error)
+	Get(context.Context, uuid.UUID) (*ZethNode, error)
+	GetAll(context.Context) ([]ZethNode, error)
+	Update(context.Context, uuid.UUID, ZethNode) error
+	Delete(context.Context, uuid.UUID) error
 	ReverseProxyCache() ReverseProxyCache
 }
 
@@ -62,16 +62,12 @@ func (id NetworkID) IsSupported() bool {
 }
 
 type ZethNode struct {
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	NodeType  NodeType  `json:"nodeType"`
-	IsDev     bool      `json:"isDev"`
-	Enabled   bool      `json:"enabled"`
-	DateAdded time.Time `json:"dateAdded"`
-}
-
-// SupportedNode is the interface that must be satisfied by all supported node types
-type SupportedNode interface {
-	Properties() ZethNode
-	SetProperties(ZethNode)
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	NodeType    NodeType  `json:"nodeType"`
+	IsDev       bool      `json:"isDev"`
+	Enabled     bool      `json:"enabled"`
+	DateAdded   time.Time `json:"dateAdded"`
+	ExplorerURL string    `json:"explorerUrl"`
+	RPC         RPC       `json:"rpc"`
 }

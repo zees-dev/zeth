@@ -31,13 +31,11 @@ func NewService(store datastore.Store) *nodeService {
 
 // Create assigns a UUID to the node and saves it to the database.
 // UUID assignment mutates the node struct.
-func (ns *nodeService) Create(ctx context.Context, n SupportedNode) (SupportedNode, error) {
+func (ns *nodeService) Create(ctx context.Context, n ZethNode) (ZethNode, error) {
 	id := uuid.NewV4()
 
 	// set ID on existing props
-	props := n.Properties()
-	props.ID = id
-	n.SetProperties(props)
+	n.ID = id
 
 	bodyBytes := new(bytes.Buffer)
 
@@ -46,7 +44,7 @@ func (ns *nodeService) Create(ctx context.Context, n SupportedNode) (SupportedNo
 	return n, ns.store.Set(nodeKey, id.Bytes(), bodyBytes.Bytes())
 }
 
-func (ns *nodeService) Get(ctx context.Context, id uuid.UUID) (SupportedNode, error) {
+func (ns *nodeService) Get(ctx context.Context, id uuid.UUID) (*ZethNode, error) {
 	dbNode, err := ns.store.Get(nodeKey, id.Bytes())
 	if err != nil {
 		return nil, err
@@ -60,7 +58,7 @@ func (ns *nodeService) Get(ctx context.Context, id uuid.UUID) (SupportedNode, er
 	return node, nil
 }
 
-func (ns *nodeService) Update(ctx context.Context, id uuid.UUID, node SupportedNode) error {
+func (ns *nodeService) Update(ctx context.Context, id uuid.UUID, node ZethNode) error {
 	ns.cache.Delete(id)
 
 	ok, err := ns.store.Has(nodeKey, id.Bytes())
@@ -82,8 +80,8 @@ func (ns *nodeService) Delete(ctx context.Context, id uuid.UUID) error {
 	return ns.store.RemovePrefix(nodeKey, id.Bytes())
 }
 
-func (ns *nodeService) GetAll(ctx context.Context) ([]SupportedNode, error) {
-	results := []SupportedNode{}
+func (ns *nodeService) GetAll(ctx context.Context) ([]ZethNode, error) {
+	results := []ZethNode{}
 
 	nodesMap, err := ns.store.GetAll(nodeKey)
 	if err != nil {
@@ -95,7 +93,7 @@ func (ns *nodeService) GetAll(ctx context.Context) ([]SupportedNode, error) {
 		if err != nil {
 			return nil, err
 		}
-		results = append(results, node)
+		results = append(results, *node)
 	}
 
 	return results, nil
@@ -105,31 +103,10 @@ func (ns *nodeService) ReverseProxyCache() ReverseProxyCache {
 	return ns.cache
 }
 
-func unmarshal(b []byte) (SupportedNode, error) {
-	var anyStruct map[string]interface{}
-	if err := json.Unmarshal(b, &anyStruct); err != nil {
+func unmarshal(b []byte) (*ZethNode, error) {
+	var node ZethNode
+	if err := json.Unmarshal(b, &node); err != nil {
 		return nil, err
 	}
-
-	nodeTypeVal, ok := anyStruct["nodeType"]
-	if !ok {
-		return nil, ErrNodeTypeNotFound
-	}
-
-	switch NodeType(nodeTypeVal.(float64)) {
-	case TypeGethNodeInProcess:
-		var node GethInProcessNode
-		if err := json.Unmarshal(b, &node); err != nil {
-			return nil, err
-		}
-		return &node, nil
-	case TypeRemoteNode:
-		var node RemoteNode
-		if err := json.Unmarshal(b, &node); err != nil {
-			return nil, err
-		}
-		return &node, nil
-	default:
-		return nil, ErrUnknownNodeType
-	}
+	return &node, nil
 }

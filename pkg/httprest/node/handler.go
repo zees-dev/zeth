@@ -24,9 +24,8 @@ func RegisterRoutes(app *app.App, baseRouter *mux.Router) {
 	baseRouter.HandleFunc("/nodes", h.getNodes).Methods(http.MethodGet)
 	baseRouter.HandleFunc("/nodes", h.createNode).Methods(http.MethodPost)
 	baseRouter.HandleFunc("/nodes/{uuid}", h.getNode).Methods(http.MethodGet)
+	baseRouter.HandleFunc("/nodes/{uuid}", h.updateNode).Methods(http.MethodPut)
 	baseRouter.HandleFunc("/nodes/{uuid}", h.removeNode).Methods(http.MethodDelete)
-	baseRouter.HandleFunc("/nodes/{uuid}/start", h.startNode).Methods(http.MethodPost)
-	baseRouter.HandleFunc("/nodes/remote", h.registerRemoteNode).Methods(http.MethodPost)
 
 	baseRouter.HandleFunc("/nodes/rpc/{uuid}", h.rpcNode)
 	baseRouter.HandleFunc("/nodes/rpc/{uuid}/sse", h.nodeRPCMonitor.handleSSE).Methods(http.MethodGet)

@@ -1,6 +1,6 @@
 import { ethers } from 'ethers'
 import type { SyncStatus, NodeResponse, RPCModules } from '../../types'
-import { EthNetworks } from '../../lib/const'
+import { EthNetworks, httpNodeRPCURL, wsNodeRPCURL } from '../../lib/const'
 
 export class Node {
   id: string
@@ -16,6 +16,8 @@ export class Node {
   explorerUrl: string
 
   httpProvider?: ethers.providers.JsonRpcProvider
+  wsProvider?: ethers.providers.WebSocketProvider
+
   connected: boolean
   network?: ethers.providers.Network
   block: number
@@ -46,10 +48,21 @@ export class Node {
     this.modules = {}
     this.mining = false
     this.isDefault = false
+
+    if (this.rpc.http) {
+      this.httpProvider = new ethers.providers.JsonRpcProvider(httpNodeRPCURL(id))
+    }
+    if (this.rpc.ws) {
+      this.wsProvider = new ethers.providers.WebSocketProvider(wsNodeRPCURL(id))
+    }
   }
 
-  setHTTPProvider(httpProvider: ethers.providers.JsonRpcProvider) {
-    this.httpProvider = httpProvider
+  setHTTPProvider(url: string) {
+    this.httpProvider = new ethers.providers.JsonRpcProvider(url)
+  }
+
+  setWSProvider(url: string) {
+    this.wsProvider = new ethers.providers.WebSocketProvider(url)
   }
 
   async getRPCData() {

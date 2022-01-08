@@ -25,7 +25,6 @@
 	}
 
 	let node = new Node(nodeResponse)
-	node.setHTTPProvider(new ethers.providers.JsonRpcProvider(httpNodeRPCURL(node.id)))
 	node.isDefault = $settingsStore.nodeSettings.defaultNodeID === node.id
 
 	if (node.enabled && node.nodeType == NodeType.RemoteNode && !node.connected) {

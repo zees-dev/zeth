@@ -8,7 +8,7 @@
 		getNetworkName,
 		getVersion,
 		getSortedModules,
-		dateWithoutTZ
+		dateWithoutTZ,
 	} from '../lib/Models/Node'
 	import { NodeType, httpNodeRPCURL, wsNodeRPCURL } from '../lib/const'
 	import { fetchData } from '../stores/http'
@@ -17,6 +17,7 @@
 	import { onDestroy } from 'svelte'
 	import SyncIndicator from '../components/SyncIndicator.svelte'
 	import BlockSyncBar from '../components/BlockSyncBar.svelte'
+	import GasPrice from '../components/GasPrice.svelte'
 
 	export let id: string
 	const [nodeData] = fetchData<NodeResponse>(nodesURL + '/' + id)
@@ -57,7 +58,6 @@
 			const nodeResponse = res.data.response
 			if (nodeResponse) {
 				node = new Node(nodeResponse)
-				node.setHTTPProvider(new ethers.providers.JsonRpcProvider(httpNodeRPCURL(node.id)))
 				node.isDefault = $settingsStore.nodeSettings.defaultNodeID === node.id
 
 				if (NodeType.RemoteNode && !node.connected) {
@@ -187,6 +187,9 @@
 			</div>
 		</div>
 	</div>
+
+	<GasPrice {node} />
+
 	<div class="text-sm span-column">
 		<h2 class="whitespace-nowrap">RPC Log ({responseCount}/{requestCount})</h2>
 		<div class="flex flex-wrap gap-2 overflow-x-scroll">

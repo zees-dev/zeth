@@ -15,7 +15,6 @@ curl -X POST \
 	-d '{"name": "bsc testnet", "httpRPCURL": "https://data-seed-prebsc-1-s1.binance.org:8545", "test": true }' \
 	http://localhost:7000/api/v1/nodes/remote
 
-
 curl -X POST \
 	-H "Content-Type: application/json" \
 	-d '{"name": "bsc mainnet", "httpRPCURL": "https://bsc-dataseed.binance.org/", "test": true }' \
@@ -49,4 +48,9 @@ curl -X POST \
 curl -X POST \
 	-H "Content-Type: application/json" \
 	-d '{"name": "Arbitrum One", "httpRPCURL": "https://arb1.arbitrum.io/rpc", "test": true }' \
+	http://localhost:7000/api/v1/nodes/remote
+
+curl -X POST \
+	-H "Content-Type: application/json" \
+	-d '{"name": "aurora mainnet", "httpRPCURL": "https://mainnet.aurora.dev", "test": true }' \
 	http://localhost:7000/api/v1/nodes/remote

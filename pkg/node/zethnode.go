@@ -24,14 +24,15 @@ func NewNode(httpRPCURL, wsRPCURL string) *ZethNode {
 	}
 }
 
-// TestConnection returns true if the node can be connected to
+// TestConnection returns true if the node can be connected to via RPC HTTP endpoint.
 func (n *ZethNode) TestConnection(ctx context.Context) error {
 	client, err := ethclient.Dial(n.RPC.HTTP)
 	if err != nil {
 		return err
 	}
 
-	_, err = client.BlockNumber(ctx)
+	// _, err = client.BlockNumber(ctx)
+	_, err = client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return err
 	}

@@ -13,10 +13,11 @@ import (
 )
 
 type registerNodeRequestPayload struct {
-	Name            string `json:"name"`
-	HTTPRPCURL      string `json:"httpRPCURL"`
-	WebsocketRPCURL string `json:"websocketRPCURL"`
-	TestConnection  bool   `json:"test"`
+	Name string `json:"name"`
+	// Enabled     bool     `json:"enabled"`
+	ExplorerURL    string   `json:"explorerUrl"`
+	RPC            node.RPC `json:"rpc"`
+	TestConnection bool     `json:"test"`
 }
 
 func (payload *registerNodeRequestPayload) Validate() url.Values {
@@ -26,17 +27,17 @@ func (payload *registerNodeRequestPayload) Validate() url.Values {
 		errs.Add("name", "name is required")
 	}
 
-	if payload.HTTPRPCURL == "" {
-		errs.Add("httpRPCURL", "httpRPCURL is required")
+	if payload.RPC.HTTP == "" {
+		errs.Add("rpc.http", "rpc http url is required")
 	} else {
-		if _, err := url.Parse(payload.HTTPRPCURL); err != nil {
-			errs.Add("httpRPCURL", "httpRPCURL is invalid")
+		if _, err := url.Parse(payload.RPC.HTTP); err != nil {
+			errs.Add("rpc.http", "rpc http url is invalid")
 		}
 	}
 
-	if payload.WebsocketRPCURL != "" {
-		if _, err := url.Parse(payload.WebsocketRPCURL); err != nil {
-			errs.Add("websocketRPCURL", "websocketRPCURL is invalid")
+	if payload.RPC.WS != "" {
+		if _, err := url.Parse(payload.RPC.WS); err != nil {
+			errs.Add("rpc.ws", "rpc ws url is invalid")
 		}
 	}
 
@@ -47,7 +48,7 @@ func (payload *registerNodeRequestPayload) Validate() url.Values {
 /* curl request:
 curl -X POST \
 	-H "Content-Type: application/json" \
-	-d '{"name": "test", "httpRPCURL": "http://localhost:8545"}' \
+	-d '{"name": "test", "rpc": { "http": "http://localhost:8545" } }' \
 	http://localhost:7000/api/v1/nodes/remote
 */
 func (h *nodesHandler) createNode(w http.ResponseWriter, r *http.Request) {
@@ -63,10 +64,7 @@ func (h *nodesHandler) createNode(w http.ResponseWriter, r *http.Request) {
 		NodeType:  node.TypeRemoteNode,
 		Enabled:   true,
 		DateAdded: time.Now().UTC(),
-		RPC: node.RPC{
-			HTTP: payload.HTTPRPCURL,
-			WS:   payload.WebsocketRPCURL,
-		},
+		RPC:       payload.RPC,
 	}
 
 	exists, err := h.remoteNodeAlreadyExists(r.Context(), payload)
@@ -92,7 +90,7 @@ func (h *nodesHandler) createNode(w http.ResponseWriter, r *http.Request) {
 	rest.JSON(w, node)
 }
 
-// remoteNodeAlreadyExists checks if node with the same name or rpcURL is already registered.
+// remoteNodeAlreadyExists checks if node with the same name or http rpc URL is already registered.
 func (h *nodesHandler) remoteNodeAlreadyExists(ctx context.Context, payload registerNodeRequestPayload) (bool, error) {
 	nodes, err := h.nodes.GetAll(ctx)
 	if err != nil {
@@ -102,7 +100,7 @@ func (h *nodesHandler) remoteNodeAlreadyExists(ctx context.Context, payload regi
 		if n.Name == payload.Name {
 			return true, nil
 		}
-		if n.RPC.HTTP == payload.HTTPRPCURL {
+		if n.RPC.HTTP == payload.RPC.HTTP {
 			return true, nil
 		}
 	}

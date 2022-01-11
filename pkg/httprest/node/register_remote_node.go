@@ -41,6 +41,10 @@ func (payload *registerNodeRequestPayload) Validate() url.Values {
 		}
 	}
 
+	if payload.RPC.Default != node.DefaultRPCHTTP && payload.RPC.Default != node.DefaultRPCWS {
+		errs.Add("rpc.default", "rpc default is invalid; must be 0 (http) or 1 (ws)")
+	}
+
 	return errs
 }
 
@@ -48,7 +52,7 @@ func (payload *registerNodeRequestPayload) Validate() url.Values {
 /* curl request:
 curl -X POST \
 	-H "Content-Type: application/json" \
-	-d '{"name": "test", "rpc": { "http": "http://localhost:8545" } }' \
+	-d '{"name": "test", "rpc": { "http": "http://localhost:8545", "default": 0 } }' \
 	http://localhost:7000/api/v1/nodes/remote
 */
 func (h *nodesHandler) createNode(w http.ResponseWriter, r *http.Request) {

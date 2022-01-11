@@ -20,24 +20,31 @@ type updateNodeRequestPayload struct {
 	TestConnection bool     `json:"test"`
 }
 
-func (a *updateNodeRequestPayload) Validate() url.Values {
+func (payload *updateNodeRequestPayload) Validate() url.Values {
 	errs := url.Values{}
-	if len(strings.TrimSpace(a.Name)) == 0 {
+	if len(strings.TrimSpace(payload.Name)) == 0 {
 		errs.Add("name", "The name field is required!")
 	}
 
-	if len(strings.TrimSpace(a.RPC.HTTP)) == 0 {
+	if len(strings.TrimSpace(payload.RPC.HTTP)) == 0 {
 		errs.Add("rpc.http", "The rpc http url is required!")
 	} else {
-		if _, err := url.Parse(a.RPC.HTTP); err != nil {
+		if _, err := url.Parse(payload.RPC.HTTP); err != nil {
 			errs.Add("rpc.http", "The rpc http url is invalid!")
 		}
 	}
 
-	if len(strings.TrimSpace(a.RPC.WS)) != 0 {
-		if _, err := url.Parse(a.RPC.WS); err != nil {
+	if len(strings.TrimSpace(payload.RPC.WS)) != 0 {
+		if _, err := url.Parse(payload.RPC.WS); err != nil {
 			errs.Add("rpc.ws", "The rpc ws url is invalid")
 		}
+		if payload.RPC.Default == node.DefaultRPCWS {
+			errs.Add("rpc.ws", "rpc default is 1 (ws) but ws url is empty")
+		}
+	}
+
+	if payload.RPC.Default != node.DefaultRPCHTTP && payload.RPC.Default != node.DefaultRPCWS {
+		errs.Add("rpc.default", "rpc default is invalid; must be 0 (http) or 1 (ws)")
 	}
 
 	return errs
@@ -46,7 +53,7 @@ func (a *updateNodeRequestPayload) Validate() url.Values {
 /* curl request:
 curl -X PUT \
 	-H "Content-Type: application/json" \
-	-d '{ "name": "avalanche mainnet", "enabled": true, "explorerUrl": "", "rpc": { "http":"https://api.avax.network/ext/bc/C/rpc", "ws": ""}, "test": true }' \
+	-d '{ "name": "avalanche mainnet", "enabled": true, "explorerUrl": "", "rpc": { "http":"https://api.avax.network/ext/bc/C/rpc", "ws": "", "default": 0 }, "test": true }' \
 	http://localhost:7000/api/v1/nodes/f0470395-76a6-4d30-a79a-57387d93fb1b
 */
 func (h *nodesHandler) updateNode(w http.ResponseWriter, r *http.Request) {

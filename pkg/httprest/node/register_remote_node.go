@@ -41,7 +41,7 @@ func (payload *registerNodeRequestPayload) Validate() url.Values {
 		}
 	}
 
-	if payload.RPC.Default != node.DefaultRPCHTTP && payload.RPC.Default != node.DefaultRPCWS {
+	if payload.RPC.Default != node.DefaultHTTPRPC && payload.RPC.Default != node.DefaultWSRPC {
 		errs.Add("rpc.default", "rpc default is invalid; must be 0 (http) or 1 (ws)")
 	}
 

@@ -7,15 +7,22 @@ import (
 	uuid "github.com/satori/go.uuid"
 )
 
+type DefaultRPC uint
+
 const (
-	DefaultRPCHTTP = iota
-	DefaultRPCWS
+	DefaultHTTPRPC DefaultRPC = iota
+	DefaultWSRPC
+	DefaultRPCend
 )
 
+func (defaultRPC DefaultRPC) IsValid() bool {
+	return defaultRPC < DefaultRPCend
+}
+
 type RPC struct {
-	HTTP    string `json:"http"`
-	WS      string `json:"ws"`
-	Default int    `json:"default"`
+	HTTP    string     `json:"http"`
+	WS      string     `json:"ws"`
+	Default DefaultRPC `json:"default"`
 }
 
 func NewNode(httpRPCURL, wsRPCURL string) *ZethNode {
@@ -26,7 +33,7 @@ func NewNode(httpRPCURL, wsRPCURL string) *ZethNode {
 		RPC: RPC{
 			HTTP:    httpRPCURL,
 			WS:      wsRPCURL,
-			Default: DefaultRPCHTTP,
+			Default: DefaultHTTPRPC,
 		},
 	}
 }

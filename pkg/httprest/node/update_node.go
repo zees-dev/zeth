@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -38,13 +39,13 @@ func (payload *updateNodeRequestPayload) Validate() url.Values {
 		if _, err := url.Parse(payload.RPC.WS); err != nil {
 			errs.Add("rpc.ws", "The rpc ws url is invalid")
 		}
-		if payload.RPC.Default == node.DefaultRPCWS {
+		if payload.RPC.Default == node.DefaultWSRPC {
 			errs.Add("rpc.ws", "rpc default is 1 (ws) but ws url is empty")
 		}
 	}
 
-	if payload.RPC.Default != node.DefaultRPCHTTP && payload.RPC.Default != node.DefaultRPCWS {
-		errs.Add("rpc.default", "rpc default is invalid; must be 0 (http) or 1 (ws)")
+	if !payload.RPC.Default.IsValid() {
+		errs.Add("rpc.default", fmt.Sprintf("rpc default is invalid; must < %d", node.DefaultRPCend))
 	}
 
 	return errs

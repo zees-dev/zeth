@@ -1,24 +1,27 @@
 <script lang="ts">
-	import { Router, Route } from 'svelte-routing'
+	import { Router, Link, Route } from 'svelte-navigator'
 	import NavBar from './components/NavBar.svelte'
-	import Menu from './components/Menu.svelte'
 
 	// content views
 	import Dashboard from './routes/Dashboard.svelte'
-	import Node from './routes/Node.svelte'
+	import SideBar from './components/SideBar.svelte'
+	import Contracts from './features/Node/Contracts.svelte'
+	import NodeRouter from './routes/NodeRouter.svelte'
+	import Settings from './routes/Settings.svelte'
 
 	export let url = ''
 </script>
 
 <Router {url}>
 	<main class="main">
+		<SideBar class="sidebar" />
 		<NavBar />
-		<Menu />
-		<section class="overflow-x-auto">
-			<Route path="node/:id" let:params>
-				<Node id={params.id} />
-			</Route>
+		<section class="content overflow-x-auto">
 			<Route path="/"><Dashboard /></Route>
+			<Route path="node/:id/*" let:params>
+				<NodeRouter id={params.id} />
+			</Route>
+			<Route path="settings"><Settings /></Route>
 		</section>
 	</main>
 </Router>
@@ -39,5 +42,13 @@
 		height: 100%;
 		display: grid;
 		grid-template: 1fr 11fr/ 15rem auto;
+	}
+
+	.content {
+		grid-column-start: 2;
+	}
+
+	.sidebar {
+		grid-row: 1/-1;
 	}
 </style>

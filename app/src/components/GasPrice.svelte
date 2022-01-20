@@ -40,7 +40,7 @@
 {#await getFees()}
 	<p>...retrieving gas fee data</p>
 {:then fee}
-	<p>Gas Price (legacy): {fee.gasPrice}</p>
+	<p>Gas Price: {parseFloat(fee.gasPrice).toFixed(2)} Gwei</p>
 	<p>MaxFeePerGas: {fee.maxFeePerGas}</p>
 	<p>MaxPriorityFeePerGas: {fee.maxPriorityFeePerGas}</p>
 	<p>Base Fee: {fee.baseFeePerGas}</p>

@@ -3,5 +3,5 @@ import { Node } from '../../lib/Models/Node'
 
 export const nodeStore = (() => {
   const { subscribe, set } = writable<Node>()
-  return { subscribe, set }
+  return { subscribe, set, remove: () => set({} as Node) }
 })()

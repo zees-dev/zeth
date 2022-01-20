@@ -1,17 +1,15 @@
 <script lang="ts">
-	import { ethers } from 'ethers'
-	import { navigate } from 'svelte-routing'
+	import { navigate } from 'svelte-navigator'
 	import { settingsStore } from '../../stores/Settings'
 	import { nodeStore } from '../../stores/Node'
-	import { httpNodeRPCURL, NodeType, EthNetworks } from '../../lib/const'
-	import type { NodeResponse, RPCModules } from '../../types'
+	import type { NodeResponse } from '../../types'
 	import {
 		Node,
 		getNodeSyncStatus,
 		getNetworkName,
 		getVersion,
 		getSortedModules,
-		dateWithoutTZ
+		dateWithoutTZ,
 	} from '../../lib/Models/Node'
 	import SyncIndicator from '../../components/SyncIndicator.svelte'
 	import BlockSyncBar from '../../components/BlockSyncBar.svelte'
@@ -27,7 +25,7 @@
 	let node = new Node(nodeResponse)
 	node.isDefault = $settingsStore.nodeSettings.defaultNodeID === node.id
 
-	if (node.enabled && node.nodeType == NodeType.RemoteNode && !node.connected) {
+	if (node.enabled && !node.connected) {
 		node
 			.getRPCData()
 			.then((n) => (node = n))
@@ -48,7 +46,6 @@
 	<div class="card-body p-0">
 		<h2 class="card-title pt-2 pl-2 mb-0 card-title-grid">
 			{node.name}
-			<div class="badge badge-sm mx-2">{NodeType[node.nodeType]}</div>
 			{#if node.isDefault}
 				<div class="badge badge-md badge-info mx-2 justify-self-end">Default</div>
 			{/if}

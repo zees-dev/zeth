@@ -2,48 +2,51 @@
 	import { utils } from 'ethers'
 	import { ethersProvider } from '../stores/Settings'
 	import { EthNetworks } from '../lib/const'
+	import { nodeStore } from '../stores/Node'
 
 	const username = 'john'
 	const theme = 'dark'
 
 	let useEIP1559 = false
 	let blockNumber = 0
-	let networkId = 0
+	let networkId: Number = 0
 	let gasFees = {
 		gasPrice: '0',
 		maxFeePerGas: '0',
 		maxPriorityFeePerGas: '0',
-		baseFeePerGas: '0'
+		baseFeePerGas: '0',
 	}
 
 	async function getFees() {
-		const [feeData] = await Promise.allSettled([$ethersProvider.getFeeData()])
+		const [feeData] = await Promise.allSettled([$nodeStore.httpProvider?.getFeeData()])
 
 		if (feeData.status === 'fulfilled') {
-			gasFees.gasPrice = utils.formatUnits(feeData.value.gasPrice ?? 0, 'gwei')
-			gasFees.maxFeePerGas = utils.formatUnits(feeData.value.maxFeePerGas ?? 0, 'gwei')
-			gasFees.maxPriorityFeePerGas = utils.formatUnits(feeData.value.maxPriorityFeePerGas ?? 0, 'gwei')
+			gasFees.gasPrice = utils.formatUnits(feeData.value?.gasPrice ?? 0, 'gwei')
+			gasFees.maxFeePerGas = utils.formatUnits(feeData.value?.maxFeePerGas ?? 0, 'gwei')
+			gasFees.maxPriorityFeePerGas = utils.formatUnits(feeData.value?.maxPriorityFeePerGas ?? 0, 'gwei')
 
 			// basefee = (maxFeePerGas - maxPriorityFeePerGas) / 2
-			const baseFeeWei = feeData.value.maxFeePerGas?.sub(feeData.value.maxPriorityFeePerGas ?? 0).div(2)
+			const baseFeeWei = feeData.value?.maxFeePerGas?.sub(feeData.value?.maxPriorityFeePerGas ?? 0).div(2)
 			gasFees.baseFeePerGas = utils.formatUnits(baseFeeWei ?? 0, 'gwei')
 		}
 	}
 
 	$: {
-		if ($ethersProvider) {
+		if ($nodeStore) {
 			// initial call on-page-load
-			$ethersProvider.getBlockNumber().then((bn) => {
+			$nodeStore.httpProvider?.getBlockNumber().then((bn) => {
 				blockNumber = bn
-				networkId = $ethersProvider.network?.chainId
+				networkId = $nodeStore.httpProvider?.network?.chainId as Number
 				getFees()
 			})
 
 			// update on block-number change
-			$ethersProvider.on('block', (bn) => {
-				blockNumber = bn
-				getFees()
-			})
+			// if ($nodeStore.rpc.ws) {
+			// 	$nodeStore.wsProvider?.on('block', (bn) => {
+			// 		blockNumber = bn
+			// 		getFees()
+			// 	})
+			// }
 		}
 	}
 </script>
@@ -75,7 +78,7 @@
 				<div>priority fee: {Math.trunc(+gasFees.maxPriorityFeePerGas) || '?'}</div>
 			</div>
 		{:else}
-			<div>gas price (legacy): {Math.round(+gasFees.gasPrice) || '?'}</div>
+			<div>gas price: {Math.round(+gasFees.gasPrice) || '?'}</div>
 		{/if}
 	</div>
 

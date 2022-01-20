@@ -7,13 +7,6 @@ export const rpcNodeURL = `${nodesURL}/rpc`
 export const httpNodeRPCURL = (id: string) => `http://${window.location.host}${rpcNodeURL}/${id}`
 export const wsNodeRPCURL = (id: string) => `ws://${window.location.host}${rpcNodeURL}/${id}`
 
-// Supported Node types
-export enum NodeType {
-  GethNodeInProcess = 1,
-  GethNode,
-  RemoteNode,
-}
-
 export enum NetworkType {
   Mainnet = 1,
   BinanceSmartChain = 56,

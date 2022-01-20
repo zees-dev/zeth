@@ -7,7 +7,6 @@
 export interface SettingsResponse {
   nodeSettings: {
     supportedNodes: {
-      nodeType: number
       version: string
     }[]
     defaultNodeID: string
@@ -40,7 +39,6 @@ export interface NodeResponse {
   id: string
   dateAdded: string
   name: string
-  nodeType: number
   isDev: boolean
   enabled: boolean
   explorerUrl: string

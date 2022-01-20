@@ -6,7 +6,6 @@ export class Node {
   id: string
   dateAdded: string
   name: string
-  nodeType: number
   isDev: boolean
   enabled: boolean
   rpc: {
@@ -30,11 +29,10 @@ export class Node {
 
   constructor(nodeResponse: NodeResponse) {
     // fields set from API request
-    const { id, dateAdded, name, nodeType, isDev, enabled, rpc, explorerUrl } = nodeResponse
+    const { id, dateAdded, name, isDev, enabled, rpc, explorerUrl } = nodeResponse
     this.id = id
     this.dateAdded = dateAdded
     this.name = name
-    this.nodeType = nodeType
     this.isDev = isDev
     this.enabled = enabled
     this.rpc = rpc

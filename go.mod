@@ -12,6 +12,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.25.0
 	github.com/satori/go.uuid v1.2.0
+	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.7.0
 	github.com/yhat/wsutil v0.0.0-20170731153501-1d66fa95c997
 	golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d

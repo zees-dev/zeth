@@ -1,10 +1,11 @@
 <script lang="ts">
+	import Alert from '../components/Alert.svelte'
+
 	let nodeName = ''
 	let nodeHTTPRPC = ''
 	let nodeWSRPC = ''
 	let nodeTestHTTPRPC = true
 	let nodeExplorerURL = ''
-
 	let registeringNode = false
 	let registerNodeError = ''
 	async function registerNode() {
@@ -76,7 +77,7 @@
 	</button>
 
 	{#if registerNodeError}
-		<div class="text-red-500">{registerNodeError}</div>
+		<Alert type="error" message={registerNodeError} />
 	{/if}
 </form>
 

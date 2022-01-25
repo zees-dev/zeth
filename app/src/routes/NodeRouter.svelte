@@ -21,7 +21,6 @@
 			const nodeResponse = res.data.response
 			if (nodeResponse) {
 				node = new Node(nodeResponse)
-				node.isDefault = $settingsStore.nodeSettings.defaultNodeID === node.id
 
 				if (!node.connected) {
 					node = await node.getRPCData()

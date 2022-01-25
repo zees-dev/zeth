@@ -122,9 +122,6 @@
 <div class="card-body p-0">
 	<h2 class="card-title pt-2 pl-2 mb-0 card-title-grid">
 		{node.name}
-		{#if node.isDefault}
-			<div class="badge badge-md badge-info mx-2 justify-self-end">Default</div>
-		{/if}
 	</h2>
 
 	<div class="pl-6 pr-2 pb card-content-grid">

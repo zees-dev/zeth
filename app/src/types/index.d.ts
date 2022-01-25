@@ -9,7 +9,6 @@ export interface SettingsResponse {
     supportedNodes: {
       version: string
     }[]
-    defaultNodeID: string
   }
 }
 

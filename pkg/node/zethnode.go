@@ -27,9 +27,8 @@ type RPC struct {
 
 func NewNode(httpRPCURL, wsRPCURL string) *ZethNode {
 	return &ZethNode{
-		ID:       uuid.NewV4(),
-		NodeType: TypeRemoteNode,
-		Enabled:  true,
+		ID:      uuid.NewV4(),
+		Enabled: true,
 		RPC: RPC{
 			HTTP:    httpRPCURL,
 			WS:      wsRPCURL,

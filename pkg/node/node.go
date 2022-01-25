@@ -25,23 +25,6 @@ const (
 	DefaultNodeWSRPC   = "wss://main-light.eth.linkpool.io/ws"
 )
 
-// NodeType represents the types of nodes that Zeth supports for setup
-type NodeType int
-
-const (
-	_ NodeType = iota
-	// GethNodeInProcess represents a geth node that runs in-process
-	TypeGethNodeInProcess
-	// GethNode is a ethereum node that is run externally from Zeth process
-	TypeGethNode
-	// GethRemoteNode is a node that is run externally from Zeth process
-	TypeRemoteNode
-	// // ErigonNodeInProcess (turbo geth) represents an erigon node that runs in-process
-	// ErigonNodeInProcess
-	// // ErigonNode is an erigon node that is run externally from Zeth process
-	// ErigonNode
-)
-
 // Ethereum mainnet and sidechain Network IDs
 type NetworkID uint64
 
@@ -64,7 +47,6 @@ func (id NetworkID) IsSupported() bool {
 type ZethNode struct {
 	ID          uuid.UUID `json:"id"`
 	Name        string    `json:"name"`
-	NodeType    NodeType  `json:"nodeType"`
 	IsDev       bool      `json:"isDev"`
 	Enabled     bool      `json:"enabled"`
 	DateAdded   time.Time `json:"dateAdded"`

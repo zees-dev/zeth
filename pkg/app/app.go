@@ -3,15 +3,10 @@ package app
 import (
 	"context"
 	"net/http"
-	"os"
-	"path/filepath"
-	"runtime"
 
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/zees-dev/zeth/pkg/datastore"
-	"github.com/zees-dev/zeth/pkg/geth/downloader"
 	"github.com/zees-dev/zeth/pkg/node"
 	"github.com/zees-dev/zeth/pkg/settings"
 )
@@ -73,20 +68,20 @@ func (app *App) Init(isNew bool) error {
 // Configure will configure the application.
 // - download geth binary if they do not exist
 // - start up in-process geth nodes (if they were running before)
-func (app *App) Configure() error {
-	// download geth binary if it does not exist
-	gethBinaryDir := filepath.Join(app.DataDir, downloader.DefaultGethBinaryDir)
-	gethBinaryPath := filepath.Join(gethBinaryDir, downloader.GethBinaryFilename(runtime.GOOS, params.Version))
-	if _, err := os.Stat(gethBinaryPath); os.IsNotExist(err) {
-		log.Info().Msgf("Downloading Geth binary for v%s...", params.Version)
-		err := downloader.DownloadGethBinary(gethBinaryDir)
-		if err != nil {
-			return err
-		}
-	}
+// func (app *App) Configure() error {
+// 	// download geth binary if it does not exist
+// 	gethBinaryDir := filepath.Join(app.DataDir, downloader.DefaultGethBinaryDir)
+// 	gethBinaryPath := filepath.Join(gethBinaryDir, downloader.GethBinaryFilename(runtime.GOOS, params.Version))
+// 	if _, err := os.Stat(gethBinaryPath); os.IsNotExist(err) {
+// 		log.Info().Msgf("Downloading Geth binary for v%s...", params.Version)
+// 		err := downloader.DownloadGethBinary(gethBinaryDir)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // Seed will seed the datastore with some initial data.
 func (app *App) Seed() error {
@@ -110,17 +105,12 @@ func (app *App) seedDefaultSettings() error {
 		return errors.Wrap(err, "failed to create default node")
 	}
 
+	// TODO: seed
 	defaultSetting := settings.Setting{
 		NodeSettings: settings.NodeSettings{
 			DefaultNodeID: defaultNode.ID,
 			SupportedNodes: []settings.NodeTypeSetting{
-				{
-					NodeType: node.TypeGethNodeInProcess,
-					Version:  params.Version,
-				},
-				{
-					NodeType: node.TypeRemoteNode,
-				},
+				{},
 			},
 		},
 	}

@@ -65,7 +65,6 @@ func (h *nodesHandler) createNode(w http.ResponseWriter, r *http.Request) {
 	remoteNode := node.ZethNode{
 		ID:        uuid.NewV4(),
 		Name:      payload.Name,
-		NodeType:  node.TypeRemoteNode,
 		Enabled:   true,
 		DateAdded: time.Now().UTC(),
 		RPC:       payload.RPC,

@@ -4,14 +4,12 @@ import (
 	"context"
 
 	uuid "github.com/satori/go.uuid"
-	"github.com/zees-dev/zeth/pkg/node"
 )
 
 type (
-	// NodeTypeSetting represents the settings for a node type
+	// TODO: modify/remove
 	NodeTypeSetting struct {
-		NodeType node.NodeType `json:"nodeType"`
-		Version  string        `json:"version"`
+		Version string `json:"version"`
 	}
 	NodeSettings struct {
 		SupportedNodes []NodeTypeSetting `json:"supportedNodes"`

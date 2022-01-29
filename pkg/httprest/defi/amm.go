@@ -18,7 +18,7 @@ curl \
 	-H "Content-Type: application/json" \
 	http://localhost:7000/api/v1/defi/amm
 */
-func (h *defiHandler) getAllAMMs(w http.ResponseWriter, r *http.Request) {
+func (h *handler) getAllAMMs(w http.ResponseWriter, r *http.Request) {
 	amms, err := h.ammSvc.GetAll(r.Context())
 	if err != nil {
 		http.Error(w, rest.HTTPInternalServerError, http.StatusInternalServerError)
@@ -33,7 +33,7 @@ curl \
 	-H "Content-Type: application/json" \
 	http://localhost:7000/api/v1/defi/amm/1
 */
-func (h *defiHandler) getAMMsByChainID(w http.ResponseWriter, r *http.Request) {
+func (h *handler) getAMMsByChainID(w http.ResponseWriter, r *http.Request) {
 	// get id from request parameters
 	id := mux.Vars(r)["chainID"]
 
@@ -93,7 +93,7 @@ curl -X POST \
 	-d '{"name":"test","url":"http://localhost:7000","chainId":1,"routerAddress":"0x1234567890123456789012345678901234567890","factoryAddress":"0x1234567890123456789012345678901234567890"}' \
 	http://localhost:7000/api/v1/defi/amm
 */
-func (h *defiHandler) createAMM(w http.ResponseWriter, r *http.Request) {
+func (h *handler) createAMM(w http.ResponseWriter, r *http.Request) {
 	payload := registerAMMPayload{}
 	if ok := rest.DecodeAndValidateJSONPayload(w, r.Body, &payload); !ok {
 		log.Debug().Msg("validation failed")
@@ -116,4 +116,57 @@ func (h *defiHandler) createAMM(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rest.JSON(w, amm)
+}
+
+/* curl request:
+curl \
+	-H "Content-Type: application/json" \
+	http://localhost:7000/api/v1/defi/amm/21fa9b25-840a-40e9-acda-fad525615e58
+*/
+func (h *handler) getAMM(w http.ResponseWriter, r *http.Request) {
+	// get id from request parameters
+	id := mux.Vars(r)["uuid"]
+
+	uid, err := uuid.FromString(id)
+	if err != nil {
+		http.Error(w, rest.HTTPBadRequest, http.StatusBadRequest)
+		return
+	}
+
+	amm, err := h.ammSvc.Get(r.Context(), uid)
+	if err != nil {
+		http.Error(w, rest.HTTPNotFound, http.StatusNotFound)
+		return
+	}
+
+	rest.JSON(w, amm)
+}
+
+/* curl request:
+curl -X DELETE \
+	http://localhost:7000/api/v1/defi/amm/21fa9b25-840a-40e9-acda-fad525615e58
+*/
+func (h *handler) removeAMM(w http.ResponseWriter, r *http.Request) {
+	// get id from request parameters
+	id := mux.Vars(r)["uuid"]
+
+	uid, err := uuid.FromString(id)
+	if err != nil {
+		http.Error(w, rest.HTTPBadRequest, http.StatusBadRequest)
+		return
+	}
+
+	_, err = h.ammSvc.Get(r.Context(), uid)
+	if err != nil {
+		http.Error(w, rest.HTTPNotFound, http.StatusNotFound)
+		return
+	}
+
+	err = h.ammSvc.Delete(r.Context(), uid)
+	if err != nil {
+		http.Error(w, rest.HTTPInternalServerError, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -36,6 +36,20 @@ func (svc *ammService) Create(ctx context.Context, amm AMM) (AMM, error) {
 	return amm, svc.store.Set(ammKey, id.Bytes(), bodyBytes.Bytes())
 }
 
+func (svc *ammService) Get(ctx context.Context, id uuid.UUID) (*AMM, error) {
+	dbAMM, err := svc.store.Get(ammKey, id.Bytes())
+	if err != nil {
+		return nil, err
+	}
+
+	amm, err := unmarshal(dbAMM)
+	if err != nil {
+		return nil, err
+	}
+
+	return amm, nil
+}
+
 func (svc *ammService) getFromStore(ctx context.Context) ([]AMM, error) {
 	results := []AMM{}
 
@@ -84,6 +98,10 @@ func (svc *ammService) GetByChainID(ctx context.Context, id int) ([]AMM, error) 
 	}
 
 	return results, nil
+}
+
+func (svc *ammService) Delete(ctx context.Context, id uuid.UUID) error {
+	return svc.store.RemovePrefix(ammKey, id.Bytes())
 }
 
 func unmarshal(b []byte) (*AMM, error) {

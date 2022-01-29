@@ -1,5 +1,7 @@
 package ethutil
 
+// source: https://goethereumbook.org/en/util-go/
+
 import (
 	"math/big"
 	"reflect"

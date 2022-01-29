@@ -15,6 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 	zapp "github.com/zees-dev/zeth/app"
 	"github.com/zees-dev/zeth/pkg/app"
+	"github.com/zees-dev/zeth/pkg/httprest/defi"
 	"github.com/zees-dev/zeth/pkg/httprest/node"
 	"github.com/zees-dev/zeth/pkg/httprest/settings"
 )
@@ -37,6 +38,7 @@ func Routing(app *app.App) *mux.Router {
 
 	settings.RegisterRoutes(app, apiRouter)
 	node.RegisterRoutes(app, apiRouter)
+	defi.RegisterRoutes(app, apiRouter)
 
 	// Setup file server to serve UI.
 	// Reference static dir if in dev mode; use embedded dir for production (single binary).

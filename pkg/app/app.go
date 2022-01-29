@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
 	"github.com/zees-dev/zeth/pkg/datastore"
+	"github.com/zees-dev/zeth/pkg/defi"
+	"github.com/zees-dev/zeth/pkg/defi/amm"
 	"github.com/zees-dev/zeth/pkg/node"
 	"github.com/zees-dev/zeth/pkg/settings"
 )
@@ -18,8 +20,9 @@ const (
 
 type (
 	Services struct {
-		Settings settings.Settings
-		Nodes    node.NodeService
+		Settings             settings.Settings
+		Nodes                node.NodeService
+		AutomatedMarketMaker defi.AutomatedMarketMaker
 	}
 	ServeSettings struct {
 		Enabled    bool
@@ -40,8 +43,9 @@ func NewApp(store datastore.Store, isDev bool) *App {
 		DataDir: DefaultAppDir,
 		IsDev:   isDev,
 		Services: Services{
-			Settings: settings.NewService(store),
-			Nodes:    node.NewService(store),
+			Settings:             settings.NewService(store),
+			Nodes:                node.NewService(store),
+			AutomatedMarketMaker: amm.NewService(store),
 		},
 	}
 }

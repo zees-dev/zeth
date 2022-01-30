@@ -48,7 +48,7 @@
 				bind:value={selectedIndex}
 				on:change={() => console.log(selectedIndex)}
 			>
-				<option disabled selected>Automated Market Maker {isRetrievingAMMs ? 'loading...' : ''}</option>
+				<option disabled selected value={-1}>Automated Market Maker {isRetrievingAMMs ? 'loading...' : ''}</option>
 				{#each ammList as amm, index}
 					<option value={index}>{amm.name}</option>
 				{/each}

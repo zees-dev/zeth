@@ -28,19 +28,8 @@ export const rpcURL = (() => {
 
 export const ethersProvider = (() => {
 	const { subscribe, update } = writable<ethers.providers.WebSocketProvider>(new ethers.providers.WebSocketProvider(''))
-
-	// initially set to defaultProvider
-	const unsubscribeFromDefaultRPC = settingsStore.subscribe((settings) => {
-		const defaultNodeID = settings?.nodeSettings.defaultNodeID
-		if (defaultNodeID) {
-			const rpcURL = `ws://${window.location.host}${rpcNodeURL}/${defaultNodeID}`
-			setRPCURL(rpcURL)
-		}
-	})
-
 	function setRPCURL(rpcURL: string) {
 		// unsubscribe on first call to setRPCURL
-		unsubscribeFromDefaultRPC()
 		update((provider) => {
 			provider.removeAllListeners()
 			// eslint-disable-next-line @typescript-eslint/no-floating-promises

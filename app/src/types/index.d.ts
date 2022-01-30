@@ -78,3 +78,12 @@ export interface TokenResponse {
     [key: string]: TokenData
   }
 }
+
+export interface AMM {
+  id: string
+  name: string
+  chainID: number
+  url: string
+  routerAddress: string
+  factoryAddress: string
+} 

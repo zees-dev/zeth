@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte'
+
 	import Alert from '../../components/Alert.svelte'
 	import { nodeStore } from '../../stores/Node'
+	import type { AMM } from '../../types'
 
 	let viewType = 0
 	let pairAddress = '',
@@ -13,6 +16,26 @@
 	let swapEnabled = false
 	let isSwapping = false
 	let swapError = ''
+	let selectedIndex: number = -1
+	let ammList: AMM[] = []
+
+	let isRetrievingAMMs = false
+	async function getAMMs() {
+		if (isRetrievingAMMs) return
+		isRetrievingAMMs = true
+		try {
+			const ammsData = await fetch(`/api/v1/defi/${$nodeStore.network?.chainId}/amm`)
+			ammList = await ammsData.json()
+		} catch (e) {
+			console.log(e)
+		} finally {
+			isRetrievingAMMs = false
+		}
+	}
+
+	onMount(() => {
+		getAMMs()
+	})
 </script>
 
 <div>WELCOME {$nodeStore.name}</div>
@@ -20,10 +43,15 @@
 <div class="max-w-2xl px-8 py-4 m-2 bg-white rounded-lg shadow-md dark:bg-gray-800">
 	<div class="flex items-center justify-between">
 		<div class="text-sm font-light text-gray-600 dark:text-gray-400">
-			<select class="select select-bordered w-full max-w-xs">
-				<option disabled selected>Automated Market Maker</option>
-				<option>TraderJoe</option>
-				<option>Pangolin</option>
+			<select
+				class="select select-bordered w-full max-w-xs"
+				bind:value={selectedIndex}
+				on:change={() => console.log(selectedIndex)}
+			>
+				<option disabled selected>Automated Market Maker {isRetrievingAMMs ? 'loading...' : ''}</option>
+				{#each ammList as amm, index}
+					<option value={index}>{amm.name}</option>
+				{/each}
 			</select>
 		</div>
 		<div class="tabs tabs-boxed">
@@ -33,6 +61,38 @@
 	</div>
 
 	<form class="flex gap-2 flex-col mt-2 p-4" on:submit|preventDefault={() => {}}>
+		{#if selectedIndex >= 0}
+			<p>{ammList[selectedIndex].name}</p>
+			<p>
+				Router address:
+				{#if $nodeStore.explorerUrl}
+					<a
+						href={`${$nodeStore.explorerUrl}/address/${ammList[selectedIndex].routerAddress}`}
+						target="_blank"
+						class="text-blue-500"
+					>
+						{ammList[selectedIndex].routerAddress}
+					</a>
+				{:else}
+					{ammList[selectedIndex].routerAddress}
+				{/if}
+			</p>
+			<p>
+				Factory address:
+				{#if $nodeStore.explorerUrl}
+					<a
+						href={`${$nodeStore.explorerUrl}/address/${ammList[selectedIndex].factoryAddress}`}
+						target="_blank"
+						class="text-blue-500"
+					>
+						{ammList[selectedIndex].factoryAddress}
+					</a>
+				{:else}
+					{ammList[selectedIndex].factoryAddress}
+				{/if}
+			</p>
+		{/if}
+
 		{#if viewType === 0}
 			<div class="container">
 				<label>Pair address</label>
@@ -41,34 +101,14 @@
 		{/if}
 
 		{#if viewType === 1}
-			<label for="token-1" class="btn btn-primary modal-button w-32">{token1 || 'select token 1'}</label>
-			<input type="checkbox" id="token-1" class="modal-toggle" />
-			<div class="modal">
-				<div class="modal-box">
-					<div class="container">
-						<label>Token 0 address</label>
-						<input type="text" placeholder="0x0000000000000000000000000000000000000000" bind:value={token1Address} />
-					</div>
-					<div class="modal-action">
-						<label for="token-1" class="btn btn-primary">Use</label>
-						<label for="token-1" class="btn">Close</label>
-					</div>
-				</div>
+			<div class="container">
+				<label>Token 1</label>
+				<input type="text" placeholder="0x0000000000000000000000000000000000000000" bind:value={token1Address} />
 			</div>
 
-			<label for="token-2" class="btn btn-primary modal-button w-32">{token2 || 'select token 2'}</label>
-			<input type="checkbox" id="token-2" class="modal-toggle" />
-			<div class="modal">
-				<div class="modal-box">
-					<div class="container">
-						<label>Token 1 address</label>
-						<input type="text" placeholder="0x0000000000000000000000000000000000000000" bind:value={token2Address} />
-					</div>
-					<div class="modal-action">
-						<label for="token-2" class="btn btn-primary">Use</label>
-						<label for="token-2" class="btn">Close</label>
-					</div>
-				</div>
+			<div class="container">
+				<label>Token 2</label>
+				<input type="text" placeholder="0x0000000000000000000000000000000000000000" bind:value={token2Address} />
 			</div>
 		{/if}
 
@@ -105,9 +145,5 @@
 		display: grid;
 		grid-column: 1/-1;
 		grid-template-columns: 1fr 3fr;
-	}
-
-	.test {
-		grid-column: 2;
 	}
 </style>

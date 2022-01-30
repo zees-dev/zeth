@@ -6,9 +6,9 @@ type AMM struct {
 	ID             uuid.UUID `json:"id"`
 	Name           string    `json:"name"`
 	URL            string    `json:"url"`
-	ChainID        uint
-	RouterAddress  string `json:"routerAddress"`
-	FactoryAddress string `json:"factoryAddress"`
+	ChainID        uint      `json:"chainID"`
+	RouterAddress  string    `json:"routerAddress"`
+	FactoryAddress string    `json:"factoryAddress"`
 }
 
 var SupportedAMMs = map[int][]AMM{

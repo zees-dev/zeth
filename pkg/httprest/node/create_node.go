@@ -63,11 +63,12 @@ func (h *nodesHandler) createNode(w http.ResponseWriter, r *http.Request) {
 	}
 
 	remoteNode := node.ZethNode{
-		ID:        uuid.NewV4(),
-		Name:      payload.Name,
-		Enabled:   true,
-		DateAdded: time.Now().UTC(),
-		RPC:       payload.RPC,
+		ID:          uuid.NewV4(),
+		Name:        payload.Name,
+		Enabled:     true,
+		ExplorerURL: payload.ExplorerURL,
+		DateAdded:   time.Now().UTC(),
+		RPC:         payload.RPC,
 	}
 
 	exists, err := h.remoteNodeAlreadyExists(r.Context(), payload)

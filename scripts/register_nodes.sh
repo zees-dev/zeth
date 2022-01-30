@@ -27,7 +27,7 @@ curl -X POST \
 
 curl -X POST \
 	-H "Content-Type: application/json" \
-	-d '{"name": "avalanche mainnet", "rpc": { "http": "https://api.avax.network/ext/bc/C/rpc", "ws": "wss://api.avax.network/ext/bc/C/ws" }, "test": true }' \
+	-d '{"name": "avalanche mainnet", "explorerUrl": "https://snowtrace.io", "rpc": { "http": "https://api.avax.network/ext/bc/C/rpc", "ws": "wss://api.avax.network/ext/bc/C/ws" }, "test": true }' \
 	http://localhost:7000/api/v1/nodes
 
 curl -X POST \

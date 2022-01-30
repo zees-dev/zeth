@@ -137,7 +137,16 @@
 			</p>
 		</div>
 		<div class="text-sm flex span-column my-1">
-			<p>Explorer URL: {node.explorerUrl || '-'}</p>
+			<p>
+				Explorer URL:
+				{#if node.explorerUrl}
+					<a href={node.explorerUrl} target="_blank" rel="noopener noreferrer">
+						{node.explorerUrl}
+					</a>
+				{:else}
+					-
+				{/if}
+			</p>
 		</div>
 		<div class="text-sm span-column mb-1">
 			<div class="whitespace-nowrap">Proxy URLs:</div>

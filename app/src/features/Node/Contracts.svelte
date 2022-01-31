@@ -55,14 +55,22 @@
 			</select>
 		</div>
 		<div class="tabs tabs-boxed">
-			<a class="tab {viewType === 0 ? 'tab-active' : ''}" on:click={() => (viewType = 0)}>Use Pair</a>
-			<a class="tab {viewType === 1 ? 'tab-active' : ''}" on:click={() => (viewType = 1)}>Use Tokens</a>
+			<a class="tab {viewType === 0 ? 'tab-active' : ''}" on:click={() => (viewType = 0)}>Pair address</a>
+			<a class="tab {viewType === 1 ? 'tab-active' : ''}" on:click={() => (viewType = 1)}>Token addresses</a>
 		</div>
 	</div>
 
 	<form class="flex gap-2 flex-col mt-2 p-4" on:submit|preventDefault={() => {}}>
 		{#if selectedIndex >= 0}
-			<p>{ammList[selectedIndex].name}</p>
+			{#if ammList[selectedIndex].url}
+				<a href={ammList[selectedIndex].url} target="_blank" class="text-blue-500 m-auto">
+					{ammList[selectedIndex].name}
+				</a>
+			{:else}
+				<div class="font-light text-gray-600 dark:text-gray-400 m-auto">
+					{ammList[selectedIndex].name}
+				</div>
+			{/if}
 			<p>
 				Router address:
 				{#if $nodeStore.explorerUrl}
@@ -126,9 +134,11 @@
 			</div>
 
 			<button
-				class="col-span-2 btn btn-secondary {isSwapping ? 'loading' : ''} disabled"
+				class="col-span-2 btn btn-secondary {isSwapping ? 'loading' : ''} {!swapEnabled && !isSwapping
+					? 'disabled'
+					: ''}"
 				type="submit"
-				disabled={swapEnabled}
+				disabled={!swapEnabled && !isSwapping}
 			>
 				SWAP
 			</button>

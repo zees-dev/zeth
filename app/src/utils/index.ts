@@ -1,10 +1,29 @@
-// export function debounce (func: (e: any) => void, timeout = 300): () => any {
-//   let timer
+import { ethers } from "ethers"
+
+// export function createDebounce(func: () => any, timeout = 300): () => any {
+//   let timer: NodeJS.Timeout
 //   return (...args) => {
+//     console.log(args)
 //     clearTimeout(timer)
-//     timer = setTimeout(() => { func.apply(this, args) }, timeout)
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//     timer = setTimeout(() => { func() }, timeout)
 //   }
 // }
+
+export function debounce(fn: any, timeout: number = 300) {
+  let timeoutId: NodeJS.Timeout | null
+  return wrapper
+  function wrapper(...args: any[]) {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+    timeoutId = setTimeout(() => {
+      timeoutId = null
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      fn(...args)
+    }, timeout)
+  }
+}
 
 /**
  * fuzzyStringMatch performs fuzzy string matching
@@ -43,4 +62,8 @@ export class Storage {
   static setItem(key: string, value: string): void {
     localStorage.setItem(key, value)
   }
+}
+
+export function getContract<T>(address: string, contractInterface: ethers.ContractInterface, provider: ethers.providers.Provider | ethers.Signer): T {
+  return ((new ethers.Contract(address, contractInterface, provider)) as unknown) as T
 }

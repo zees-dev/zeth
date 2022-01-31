@@ -7,4 +7,5 @@
 
 # Build output
 /public/build/
+/typechain/
 

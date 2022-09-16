@@ -1,5 +1,8 @@
 import { writable, Writable } from 'svelte/store'
 
+// TODO: use simple getters and setters to GET/PUT data from/to the store
+// https://youtu.be/1Df-9EKvZr0?t=6261
+
 export const fetchStates = {
   IDLE: 'idle',
   LOADING: 'loading',

@@ -30,6 +30,8 @@
 		duration: number
 	}
 
+	let loggingPaused = false
+
 	// TODO: make this a store
 	let rpcEvents: EventSource
 	let requestCount = 0
@@ -37,7 +39,10 @@
 	let rpcEventData: RPCEvent[] = []
 
 	rpcEvents = new EventSource(httpNodeRPCURL(node.id) + '/sse')
+	// TODO: unsubscrube on destroy
 	rpcEvents.onmessage = (event) => {
+		if (loggingPaused) return
+
 		const data = JSON.parse(event.data)
 
 		// JSONify request headers and body
@@ -73,12 +78,20 @@
 		// re-assign var to update list in svelte
 		rpcEventData = updatedData
 	}
+
+	function handleClear() {
+		rpcEventData = []
+		requestCount = 0
+		responseCount = 0
+	}
 </script>
 
 <div class="text-sm span-column w-11/12 {$$props.class}">
 	<h2 class="whitespace-nowrap text-center" title="{responseCount} sent, {requestCount} recv">
 		RPC Log ({responseCount} ⬆︎/{requestCount} ⬇︎)
 	</h2>
+	<button on:click={handleClear}>clear</button>
+	<span on:click={() => loggingPaused = !loggingPaused}>{loggingPaused ? '▶️' : '⏸'}</span>
 	<table class="table w-full table-compact">
 		<thead>
 			<tr>

@@ -1,4 +1,5 @@
-// #![allow(unused)] // For beginning only.
+#![allow(unused)] // TODO remove for prod.
+
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,

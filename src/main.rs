@@ -13,16 +13,24 @@ use tower_http::services::ServeDir;
 
 #[derive(Clone)]
 struct AppState {
-    tx: crossbeam_channel::Sender<()>,
+    channel: (
+        crossbeam_channel::Sender<()>,
+        crossbeam_channel::Receiver<()>,
+    ),
+}
+
+impl AppState {
+    fn new() -> Self {
+        let (tx, rx) = crossbeam_channel::unbounded::<()>();
+        Self { channel: (tx, rx) }
+    }
 }
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let (tx, rx) = crossbeam_channel::unbounded::<()>();
-
-    let state = AppState { tx: tx.clone() };
+    let state = AppState::new();
 
     let app = Router::new()
         // .route("/", get(index_handler))

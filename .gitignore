@@ -10,3 +10,6 @@ zeth.db/
 # Bin
 zeth
 !cmd/zeth
+
+# Rust
+target/

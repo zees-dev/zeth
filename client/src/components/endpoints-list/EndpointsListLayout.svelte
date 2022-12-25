@@ -24,6 +24,11 @@
 
   <section>
     <h1>Endpoints</h1>
+    <!-- CARD (node stats) - left -->
+    <!-- Button add node (right) -->
+
+    <!-- Connect to metamask -->
+    <!-- node list to metamask -->
   </section>
 </div>
 

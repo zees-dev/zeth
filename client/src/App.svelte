@@ -97,9 +97,7 @@
     </a>
   </aside>
 
-  <div class="content">
-    <Router {routes} />
-  </div>
+  <Router {routes} />
 </main>
 
 <!-- <Router {url}>

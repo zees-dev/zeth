@@ -1,5 +1,6 @@
 #![allow(unused)] // TODO remove for prod.
 
+use anyhow::Result;
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
@@ -9,10 +10,17 @@ use axum::{
 };
 use rust_embed::RustEmbed;
 use serde_json::{json, Value};
+use std::sync::Arc;
+use surrealdb::{Datastore, Session};
 use tower_http::services::ServeDir;
 
-#[derive(Clone)]
+pub mod db;
+
+mod endpoints;
+use endpoints::service::EndpointsService;
+
 struct AppState {
+    endpoint_service: EndpointsService,
     channel: (
         crossbeam_channel::Sender<()>,
         crossbeam_channel::Receiver<()>,
@@ -20,17 +28,30 @@ struct AppState {
 }
 
 impl AppState {
-    fn new() -> Self {
+    fn new(ds: Datastore) -> Self {
+        // TODO inject DB trait?
+
+        let endpoint_service = EndpointsService::new(ds);
+
         let (tx, rx) = crossbeam_channel::unbounded::<()>();
-        Self { channel: (tx, rx) }
+        Self {
+            endpoint_service,
+            channel: (tx, rx),
+        }
     }
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
+    // TODO - use clap for CLI
+
     tracing_subscriber::fmt::init();
 
-    let state = AppState::new();
+    // docker run --rm -it --name surrealdb -p 127.0.0.1:8000:8000 surrealdb/surrealdb:latest start --log trace --user root --pass root memory
+    // let ds = Datastore::new("memory").await?;
+    let ds = Datastore::new("file://Zeth/temp.db").await?;
+
+    let state = Arc::new(AppState::new(ds));
 
     let app = Router::new()
         // .route("/", get(index_handler))
@@ -47,8 +68,9 @@ async fn main() {
     tracing::info!("listening on {}...", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
-        .await
-        .unwrap();
+        .await?;
+
+    Ok(())
 }
 
 #[derive(RustEmbed)]
@@ -70,7 +92,7 @@ async fn index_handler() -> impl IntoResponse {
 
 async fn asset_handler(Path((dir, asset)): Path<(String, String)>) -> impl IntoResponse {
     let asset_path = format!("{}/{}", dir, asset);
-    tracing::info!("retreiving asset: {}", asset_path);
+    tracing::info!("retreiving asset: {asset_path}");
 
     let file = Assets::get(&asset_path).unwrap();
     let body = axum::body::boxed(axum::body::Full::from(file.data));

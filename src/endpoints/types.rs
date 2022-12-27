@@ -4,7 +4,7 @@ use chrono::Utc;
 use std::collections::BTreeMap;
 use surrealdb::sql::{Object, Value};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Endpoint {
     pub id: Option<String>,
     pub name: String,

@@ -17,9 +17,9 @@ use tower_http::services::ServeDir;
 pub mod db;
 
 mod endpoints;
-use endpoints::service::EndpointsService;
+use endpoints::{routes as endpoints_routes, service::EndpointsService};
 
-struct AppState {
+pub struct AppState {
     endpoint_service: EndpointsService,
     channel: (
         crossbeam_channel::Sender<()>,
@@ -60,9 +60,11 @@ async fn main() -> Result<()> {
             "/",
             get_service(ServeDir::new("./client/dist")).handle_error(|_| not_found()),
         )
+        .nest("/api/v1/nodes", endpoints_routes::router(state.clone()))
         .route("/health", get(health))
-        .fallback_service(get(not_found))
-        .with_state(state);
+        .route("/version", get(version))
+        .fallback_service(get(not_found));
+    // .with_state(state);
 
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000)); // TODO - get from config
     tracing::info!("listening on {}...", addr);
@@ -107,6 +109,11 @@ async fn asset_handler(Path((dir, asset)): Path<(String, String)>) -> impl IntoR
 // `curl -X GET http://localhost:3000/health`
 async fn health() -> Json<Value> {
     Json(json!({ "status": "up" }))
+}
+
+// `curl -X GET http://localhost:3000/version`
+async fn version() -> Json<Value> {
+    Json(json!({ "version": "v0.0.1" })) // todo - get from env?/file?
 }
 
 // Finally, we use a fallback route for anything that didn't match.

@@ -1,16 +1,16 @@
-use std::sync::Arc;
-
+use super::types;
 use crate::AppState;
+
 use axum::{
+    body::Body,
     extract::{Json, Path, State},
-    http::StatusCode,
-    response::{Html, IntoResponse, Response},
-    routing::{delete, get, get_service, post, put},
+    http::{Request, StatusCode},
+    response::IntoResponse,
+    routing::{get, post},
     Router,
 };
-use serde_json::json;
-
-use super::types;
+use std::str::FromStr;
+use std::sync::Arc;
 
 pub fn router(state: Arc<AppState>) -> Router {
     Router::new()
@@ -21,6 +21,7 @@ pub fn router(state: Arc<AppState>) -> Router {
                 .put(update_endpoint)
                 .delete(delete_endpoint),
         )
+        .route("/:endpoint_id/rpc", post(proxy_rpc_request))
         .with_state(state)
 }
 
@@ -121,5 +122,116 @@ async fn delete_endpoint(
             tracing::error!("[delete_endpoint] error deleting endpoint: {}", e);
             (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
         }
+    }
+}
+
+async fn proxy_rpc_request(
+    state: State<Arc<AppState>>,
+    Path(endpoint_id): Path<String>,
+    mut req: Request<Body>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let endpoint = state
+        .endpoint_service
+        .get(&endpoint_id)
+        .await
+        .map_err(|e| (StatusCode::NOT_FOUND, e.to_string()))?;
+
+    // remove headers - which would break proxied request
+    req.headers_mut().remove("host");
+    req.headers_mut().remove("content-length");
+
+    // reset url to proxy request
+    let rpc_url = endpoint.rpc_http;
+    *req.uri_mut() = hyper::http::Uri::from_str(&rpc_url).expect("invalid url");
+
+    tracing::info!("request: {:?}", req);
+
+    let connector = hyper_tls::HttpsConnector::new();
+    let client = hyper::Client::builder().build::<_, hyper::Body>(connector);
+    let res = client.request(req).await.expect("failed to make request");
+
+    tracing::info!("response status: {}", res.status());
+
+    Ok(res)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hyper::Method;
+
+    #[tokio::test]
+    async fn test_rpc_using_hyper_client() {
+        let connector = hyper_tls::HttpsConnector::new();
+        let client = hyper::Client::builder().build::<_, hyper::Body>(connector);
+        let url = "https://rpc.flashbots.net";
+        let body = r#"{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}"#;
+        let req = hyper::http::Request::post(url)
+            .header(
+                hyper::http::header::CONTENT_TYPE,
+                hyper::http::header::HeaderValue::from_static("application/json"),
+            )
+            .body(Body::from(body))
+            .unwrap();
+
+        // req=Request { method: POST, uri: https://rpc.flashbots.net, version: HTTP/1.1, headers: {"content-type": "application/json"}, body: Body(Full(b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_chainId\"}")) }
+
+        let res = client.request(req).await.unwrap();
+
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body_string = std::str::from_utf8(&bytes).unwrap();
+
+        assert_eq!(
+            body_string,
+            "{\"id\":1,\"result\":\"0x1\",\"jsonrpc\":\"2.0\"}\n"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_proxy_rpc_request() {
+        let ds = surrealdb::Datastore::new("memory").await.unwrap();
+        let state = Arc::new(AppState::new(ds));
+        let endpoint_id = state
+            .endpoint_service
+            .create(&types::Endpoint {
+                id: None,
+                name: "test".to_string(),
+                rpc_http: "https://rpc.flashbots.net".to_string(),
+                is_dev: false,
+                enabled: true,
+                date_added: chrono::Utc::now(),
+                explorer_url: None,
+                rpc_ws: None,
+            })
+            .await
+            .unwrap();
+
+        let req = Request::builder()
+            .method(Method::POST)
+            .uri("https://rpc.flashbots.net")
+            .header(
+                hyper::http::header::CONTENT_TYPE,
+                hyper::http::header::HeaderValue::from_static("application/json"),
+            )
+            .body(Body::from(
+                r#"{"jsonrpc":"2.0","id":1,"method":"eth_chainId"}"#,
+            ))
+            .unwrap();
+
+        let res = proxy_rpc_request(State(state), Path(endpoint_id), req)
+            .await
+            .unwrap()
+            .into_response();
+
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body_string = std::str::from_utf8(&bytes).unwrap();
+        assert_eq!(
+            body_string,
+            "{\"id\":1,\"result\":\"0x1\",\"jsonrpc\":\"2.0\"}\n"
+        );
     }
 }

@@ -1,7 +1,7 @@
 use anyhow::anyhow;
 use std::collections::BTreeMap;
 use surrealdb::{
-    sql::{thing, Array, Object, Value},
+    sql::{thing, Value},
     Datastore, Error, Response, Session,
 };
 

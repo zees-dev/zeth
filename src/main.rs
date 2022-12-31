@@ -2,16 +2,16 @@
 
 use anyhow::Result;
 use axum::{
-    extract::{Json, Path, State},
+    extract::{Json, Path},
     http::StatusCode,
     response::{Html, IntoResponse, Response},
-    routing::{get, get_service, post, put},
+    routing::{get, get_service},
     Router,
 };
 use rust_embed::RustEmbed;
 use serde_json::{json, Value};
-use std::sync::Arc;
-use surrealdb::{Datastore, Session};
+use std::{net::SocketAddr, sync::Arc};
+use surrealdb::Datastore;
 use tower_http::services::ServeDir;
 
 pub mod db;
@@ -60,7 +60,21 @@ async fn main() -> Result<()> {
             "/",
             get_service(ServeDir::new("./client/dist")).handle_error(|_| not_found()),
         )
-        .nest("/api/v1/nodes", endpoints_routes::router(state.clone()))
+        .nest("/api/v1/endpoints", endpoints_routes::router(state.clone()))
+        // .route("/:endpoint_id/rpc", any_service(service_fn(proxy_rpc_req)))
+        // .route(
+        //     "/:endpoint_id/rpc",
+        //     any_service(service_fn(move |req: Request<Body>| {
+        //         // let router_svc = router_svc.clone();
+        //         async move {
+        //             // if req.method() == Method::CONNECT {
+        //             proxy(req).await
+        //             // } else {
+        //             //     router_svc.oneshot(req).await.map_err(|err| match err {})
+        //             // }
+        //         }
+        //     })),
+        // )
         .route("/health", get(health))
         .route("/version", get(version))
         .fallback_service(get(not_found));
@@ -69,7 +83,7 @@ async fn main() -> Result<()> {
     let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000)); // TODO - get from config
     tracing::info!("listening on {}...", addr);
     axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+        .serve(app.into_make_service_with_connect_info::<SocketAddr>())
         .await?;
 
     Ok(())

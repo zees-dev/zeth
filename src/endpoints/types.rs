@@ -1,6 +1,4 @@
 use anyhow::anyhow;
-use chrono::TimeZone;
-use chrono::Utc;
 use std::collections::BTreeMap;
 use surrealdb::sql::{Object, Value};
 
@@ -79,7 +77,7 @@ impl From<Endpoint> for Value {
 
 impl TryFrom<Object> for Endpoint {
     type Error = anyhow::Error;
-    fn try_from(mut val: Object) -> Result<Endpoint, anyhow::Error> {
+    fn try_from(val: Object) -> Result<Endpoint, anyhow::Error> {
         let map = val.0;
 
         // Extract the values from the map and convert them to the appropriate types

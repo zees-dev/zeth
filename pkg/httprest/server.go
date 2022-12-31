@@ -90,18 +90,14 @@ func Start(app *app.App, r http.Handler) error {
 		defer cancel()
 
 		// Asking listener to shutdown and load shed.
-		err := server.Shutdown(ctx)
-		if err != nil {
+		if err := server.Shutdown(ctx); err != nil {
 			log.Info().Msgf("graceful shutdown did not complete in %v : %v", 10, err)
-			err = server.Close()
-			return err
+			return server.Close()
 		}
 
 		switch {
 		case sig == syscall.SIGSTOP:
 			return errors.New("integrity issue caused shutdown")
-		case err != nil:
-			return errors.Wrap(err, "could not stop server gracefully")
 		}
 	}
 

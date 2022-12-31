@@ -60,8 +60,7 @@ func (app *App) Init(isNew bool) error {
 
 	// seed database if it is new
 	if isNew {
-		err := app.Seed()
-		if err != nil {
+		if err := app.Seed(); err != nil {
 			return errors.Wrap(err, "failed to seed datastore")
 		}
 	}

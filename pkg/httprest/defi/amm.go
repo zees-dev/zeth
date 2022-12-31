@@ -156,14 +156,12 @@ func (h *handler) removeAMM(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.ammSvc.Get(r.Context(), uid)
-	if err != nil {
+	if _, err = h.ammSvc.Get(r.Context(), uid); err != nil {
 		http.Error(w, rest.HTTPNotFound, http.StatusNotFound)
 		return
 	}
-
-	err = h.ammSvc.Delete(r.Context(), uid)
-	if err != nil {
+	
+	if err = h.ammSvc.Delete(r.Context(), uid); err != nil {
 		http.Error(w, rest.HTTPInternalServerError, http.StatusInternalServerError)
 		return
 	}

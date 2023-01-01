@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.68"
-axum = "0.6.1"
+axum = { version = "0.6.1", features = ["headers"] }
 chrono = "0.4.23"
-crossbeam-channel = "0.5.6"
+futures = "0.3.25"
 hyper = { version = "0.14.23", features = ["client"] }
 hyper-tls = "0.5.0"
 rust-embed = "6.4.2"

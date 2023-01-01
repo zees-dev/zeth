@@ -4,10 +4,14 @@ use crate::AppState;
 use axum::{
     body::Body,
     extract::{Json, Path, State},
+    headers::UserAgent,
     http::{Request, StatusCode},
-    response::IntoResponse,
+    response::{
+        sse::{Event, Sse},
+        IntoResponse,
+    },
     routing::{get, post},
-    Router,
+    Router, TypedHeader,
 };
 use std::str::FromStr;
 use std::sync::Arc;
@@ -22,6 +26,7 @@ pub fn router(state: Arc<AppState>) -> Router {
                 .delete(delete_endpoint),
         )
         .route("/:endpoint_id/rpc", post(proxy_rpc_request))
+        .route("/:endpoint_id/rpc/events", get(sse_handler))
         .with_state(state)
 }
 
@@ -136,6 +141,8 @@ async fn proxy_rpc_request(
         .await
         .map_err(|e| (StatusCode::NOT_FOUND, e.to_string()))?;
 
+    // req.into_parts();
+
     // remove headers - which would break proxied request
     req.headers_mut().remove("host");
     req.headers_mut().remove("content-length");
@@ -150,9 +157,72 @@ async fn proxy_rpc_request(
     let client = hyper::Client::builder().build::<_, hyper::Body>(connector);
     let res = client.request(req).await.expect("failed to make request");
 
+    // TODO: try reading body as bytes, so they can be cloned and sent to sbuscribers
+
     tracing::info!("response status: {}", res.status());
 
-    Ok(res)
+    let body_bytes = hyper::body::to_bytes(res.into_body())
+        .await
+        .expect("failed to read body");
+
+    let mut rpc_channel_map = state.rpc_channel_map.lock().unwrap();
+    match rpc_channel_map.get(&endpoint_id) {
+        Some((sender, _)) => {
+            // send raw response body to existing channel
+            sender
+                .send(body_bytes.clone())
+                .expect("failed to send message");
+        }
+        None => {
+            let channel = tokio::sync::broadcast::channel::<hyper::body::Bytes>(2);
+            rpc_channel_map.insert(endpoint_id.clone(), channel);
+            tracing::info!("created new event publisher for {}...", endpoint_id);
+        }
+    }
+    // TODO: handle cleanup/removal of channel (LRU cache?)
+
+    Ok(body_bytes)
+}
+
+async fn sse_handler(
+    state: State<Arc<AppState>>,
+    TypedHeader(user_agent): TypedHeader<UserAgent>,
+    Path(endpoint_id): Path<String>,
+) -> Result<Sse<impl futures::Stream<Item = Result<Event, anyhow::Error>>>, (StatusCode, String)> {
+    state
+        .endpoint_service
+        .get(&endpoint_id)
+        .await
+        .map_err(|e| (StatusCode::NOT_FOUND, e.to_string()))?;
+
+    let rpc_channel_map = state.rpc_channel_map.lock().unwrap();
+    let receiver = match rpc_channel_map.get(&endpoint_id) {
+        Some((sender, _)) => sender.subscribe(),
+        None => {
+            return Err((
+                StatusCode::NOT_FOUND,
+                format!("no event publisher found for {}", endpoint_id),
+            ))
+        }
+    };
+
+    tracing::info!("`{}` connected", user_agent.as_str());
+
+    let stream = futures::stream::unfold(receiver, |mut receiver| async move {
+        match receiver.recv().await {
+            Ok(bytes) => {
+                let event = Event::default().data(String::from_utf8(bytes.to_vec()).unwrap());
+                Some((Ok(event), receiver))
+            }
+            Err(err) => {
+                tracing::error!("error receiving message: {}", err);
+                None
+            }
+        }
+    });
+
+    // TODO: use new stream to send events
+    Ok(Sse::new(stream))
 }
 
 #[cfg(test)]
@@ -233,5 +303,24 @@ mod tests {
             body_string,
             "{\"id\":1,\"result\":\"0x1\",\"jsonrpc\":\"2.0\"}\n"
         );
+    }
+
+    #[tokio::test]
+    async fn test_channels() {
+        let (tx, mut rx1) = tokio::sync::broadcast::channel(2);
+        let mut rx2 = tx.subscribe();
+
+        tokio::spawn(async move {
+            assert_eq!(rx1.recv().await.unwrap(), 10);
+            assert_eq!(rx1.recv().await.unwrap(), 20);
+        });
+
+        tokio::spawn(async move {
+            assert_eq!(rx2.recv().await.unwrap(), 110);
+            assert_eq!(rx2.recv().await.unwrap(), 20);
+        });
+
+        tx.send(10).unwrap();
+        tx.send(20).unwrap();
     }
 }

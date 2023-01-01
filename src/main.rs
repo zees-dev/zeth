@@ -10,8 +10,13 @@ use axum::{
 };
 use rust_embed::RustEmbed;
 use serde_json::{json, Value};
-use std::{net::SocketAddr, sync::Arc};
+use std::{
+    collections::HashMap,
+    net::SocketAddr,
+    sync::{Arc, Mutex},
+};
 use surrealdb::Datastore;
+use tokio::sync::broadcast::{Receiver, Sender};
 use tower_http::services::ServeDir;
 
 pub mod db;
@@ -21,22 +26,24 @@ use endpoints::{routes as endpoints_routes, service::EndpointsService};
 
 pub struct AppState {
     endpoint_service: EndpointsService,
-    channel: (
-        crossbeam_channel::Sender<()>,
-        crossbeam_channel::Receiver<()>,
-    ),
+    rpc_channel_map:
+        Mutex<HashMap<String, (Sender<hyper::body::Bytes>, Receiver<hyper::body::Bytes>)>>,
 }
 
 impl AppState {
     fn new(ds: Datastore) -> Self {
         // TODO inject DB trait?
 
+        let rpc_channel_map = Mutex::new(HashMap::<
+            String,
+            (Sender<hyper::body::Bytes>, Receiver<hyper::body::Bytes>),
+        >::new());
+
         let endpoint_service = EndpointsService::new(ds);
 
-        let (tx, rx) = crossbeam_channel::unbounded::<()>();
         Self {
             endpoint_service,
-            channel: (tx, rx),
+            rpc_channel_map,
         }
     }
 }

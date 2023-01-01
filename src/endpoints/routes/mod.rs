@@ -4,7 +4,7 @@ use crate::AppState;
 use axum::{
     body::Body,
     extract::{
-        ws::{Message, WebSocket, WebSocketUpgrade},
+        ws::{Message, WebSocketUpgrade},
         Json, Path, State,
     },
     headers::UserAgent,
@@ -13,11 +13,12 @@ use axum::{
         sse::{Event, Sse},
         IntoResponse,
     },
-    routing::{get, post},
+    routing::get,
     Router, TypedHeader,
 };
 use std::str::FromStr;
 use std::sync::Arc;
+use tokio_tungstenite::tungstenite;
 
 pub fn router(state: Arc<AppState>) -> Router {
     Router::new()
@@ -148,40 +149,98 @@ async fn proxy_ws_rpc_request(
         .await
         .map_err(|e| (StatusCode::NOT_FOUND, e.to_string()))?;
 
-    if let Some(TypedHeader(user_agent)) = user_agent {
-        tracing::info!("`{}` connected", user_agent.as_str());
-    }
+    let ws_url = match endpoint.rpc_ws {
+        Some(url) => url,
+        None => {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Endpoint does not support WS RPC".to_string(),
+            ))
+        }
+    };
 
+    let mut rpc_channel_map = state.rpc_channel_map.lock().unwrap();
+    let sender = match rpc_channel_map.get(&endpoint_id) {
+        Some((sender, _)) => sender.clone(),
+        None => {
+            let (sender, receiver) = tokio::sync::broadcast::channel::<hyper::body::Bytes>(2);
+            rpc_channel_map.insert(endpoint_id.clone(), (sender.clone(), receiver));
+            tracing::info!("created new event publisher for {}...", endpoint_id);
+            sender
+        }
+    };
+
+    // TODO: gracefully handle error conditions (dont unwrap)
     Ok(ws.on_upgrade(|mut socket| async move {
+        let (mut endpoint_ws_stream, _) = tungstenite::connect(ws_url).unwrap();
+
+        if let Some(TypedHeader(user_agent)) = user_agent {
+            tracing::info!("`{}` connected", user_agent.as_str());
+        }
+
         loop {
+            // TODO: need some sort of keep-alive check to make sure the client is still connected
             if let Some(msg) = socket.recv().await {
                 if let Ok(msg) = msg {
                     match msg {
                         Message::Text(t) => {
-                            tracing::info!("client sent str: {:?}", t);
-                            socket.send(Message::Text(t)).await.unwrap();
+                            tracing::debug!("client sent str: {:?}", t);
+                            endpoint_ws_stream
+                                .write_message(tokio_tungstenite::tungstenite::Message::Text(t))
+                                .unwrap();
                         }
                         Message::Binary(b) => {
-                            tracing::info!("client sent binary data: {:?}", b);
-                            socket.send(Message::Binary(b)).await.unwrap();
+                            tracing::debug!(
+                                "client sent binary data, (utf8 string): {:?}",
+                                String::from_utf8(b.clone()).unwrap()
+                            );
+                            endpoint_ws_stream
+                                .write_message(tokio_tungstenite::tungstenite::Message::Binary(b))
+                                .unwrap();
                         }
                         Message::Ping(_) | Message::Pong(_) => {
-                            tracing::info!("socket ping-pong");
+                            tracing::debug!("socket ping-pong");
                             socket.send(Message::Pong(Vec::new())).await.unwrap();
                         }
                         Message::Close(_) => {
-                            tracing::info!("disconnecting client...");
-                            socket.close().await.unwrap();
-                            return;
+                            tracing::debug!("disconnecting client...");
+                            socket.close().await;
+                            break;
                         }
                     }
                 } else {
-                    tracing::info!("client disconnected.");
-                    socket.close().await.unwrap();
-                    return;
+                    socket.close().await;
+                    endpoint_ws_stream.close(None).unwrap();
+                    break;
+                }
+            }
+            if let Ok(msg) = endpoint_ws_stream.read_message() {
+                match msg {
+                    tokio_tungstenite::tungstenite::Message::Text(t) => {
+                        tracing::debug!("endpoint sent str: {:?}", t);
+                        socket.send(Message::Text(t.clone())).await.unwrap();
+                        sender.send(hyper::body::Bytes::from(t)).unwrap();
+                    }
+                    tokio_tungstenite::tungstenite::Message::Binary(b) => {
+                        tracing::debug!("endpoint sent binary data: {:?}", b);
+                        socket.send(Message::Binary(b.clone())).await.unwrap();
+                        sender.send(hyper::body::Bytes::from(b)).unwrap();
+                    }
+                    tokio_tungstenite::tungstenite::Message::Ping(_)
+                    | tokio_tungstenite::tungstenite::Message::Pong(_) => {
+                        tracing::debug!("endpoint ping-pong");
+                        socket.send(Message::Pong(Vec::new())).await.unwrap();
+                    }
+                    tokio_tungstenite::tungstenite::Message::Close(_) => {
+                        tracing::debug!("disconnecting endpoint...");
+                        socket.close().await.unwrap();
+                        return;
+                    }
+                    _ => {}
                 }
             }
         }
+        tracing::info!("client disconnected.");
     }))
 }
 

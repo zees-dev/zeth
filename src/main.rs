@@ -68,26 +68,12 @@ async fn main() -> Result<()> {
             get_service(ServeDir::new("./client/dist")).handle_error(|_| not_found()),
         )
         .nest("/api/v1/endpoints", endpoints_routes::router(state.clone()))
-        // .route("/:endpoint_id/rpc", any_service(service_fn(proxy_rpc_req)))
-        // .route(
-        //     "/:endpoint_id/rpc",
-        //     any_service(service_fn(move |req: Request<Body>| {
-        //         // let router_svc = router_svc.clone();
-        //         async move {
-        //             // if req.method() == Method::CONNECT {
-        //             proxy(req).await
-        //             // } else {
-        //             //     router_svc.oneshot(req).await.map_err(|err| match err {})
-        //             // }
-        //         }
-        //     })),
-        // )
         .route("/health", get(health))
         .route("/version", get(version))
         .fallback_service(get(not_found));
     // .with_state(state);
 
-    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000)); // TODO - get from config
+    let addr = std::net::SocketAddr::from(([0, 0, 0, 0], 3000)); // TODO - get from config, parse str instead
     tracing::info!("listening on {}...", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())

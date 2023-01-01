@@ -3,7 +3,10 @@ use crate::AppState;
 
 use axum::{
     body::Body,
-    extract::{Json, Path, State},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Json, Path, State,
+    },
     headers::UserAgent,
     http::{Request, StatusCode},
     response::{
@@ -25,7 +28,10 @@ pub fn router(state: Arc<AppState>) -> Router {
                 .put(update_endpoint)
                 .delete(delete_endpoint),
         )
-        .route("/:endpoint_id/rpc", post(proxy_rpc_request))
+        .route(
+            "/:endpoint_id/rpc",
+            get(proxy_ws_rpc_request).post(proxy_http_rpc_request),
+        )
         .route("/:endpoint_id/rpc/events", get(sse_handler))
         .with_state(state)
 }
@@ -130,7 +136,56 @@ async fn delete_endpoint(
     }
 }
 
-async fn proxy_rpc_request(
+async fn proxy_ws_rpc_request(
+    state: State<Arc<AppState>>,
+    ws: WebSocketUpgrade,
+    user_agent: Option<TypedHeader<UserAgent>>,
+    Path(endpoint_id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, String)> {
+    let endpoint = state
+        .endpoint_service
+        .get(&endpoint_id)
+        .await
+        .map_err(|e| (StatusCode::NOT_FOUND, e.to_string()))?;
+
+    if let Some(TypedHeader(user_agent)) = user_agent {
+        tracing::info!("`{}` connected", user_agent.as_str());
+    }
+
+    Ok(ws.on_upgrade(|mut socket| async move {
+        loop {
+            if let Some(msg) = socket.recv().await {
+                if let Ok(msg) = msg {
+                    match msg {
+                        Message::Text(t) => {
+                            tracing::info!("client sent str: {:?}", t);
+                            socket.send(Message::Text(t)).await.unwrap();
+                        }
+                        Message::Binary(b) => {
+                            tracing::info!("client sent binary data: {:?}", b);
+                            socket.send(Message::Binary(b)).await.unwrap();
+                        }
+                        Message::Ping(_) | Message::Pong(_) => {
+                            tracing::info!("socket ping-pong");
+                            socket.send(Message::Pong(Vec::new())).await.unwrap();
+                        }
+                        Message::Close(_) => {
+                            tracing::info!("disconnecting client...");
+                            socket.close().await.unwrap();
+                            return;
+                        }
+                    }
+                } else {
+                    tracing::info!("client disconnected.");
+                    socket.close().await.unwrap();
+                    return;
+                }
+            }
+        }
+    }))
+}
+
+async fn proxy_http_rpc_request(
     state: State<Arc<AppState>>,
     Path(endpoint_id): Path<String>,
     mut req: Request<Body>,
@@ -156,8 +211,6 @@ async fn proxy_rpc_request(
     let connector = hyper_tls::HttpsConnector::new();
     let client = hyper::Client::builder().build::<_, hyper::Body>(connector);
     let res = client.request(req).await.expect("failed to make request");
-
-    // TODO: try reading body as bytes, so they can be cloned and sent to sbuscribers
 
     tracing::info!("response status: {}", res.status());
 
@@ -221,7 +274,6 @@ async fn sse_handler(
         }
     });
 
-    // TODO: use new stream to send events
     Ok(Sse::new(stream))
 }
 
@@ -260,7 +312,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_proxy_rpc_request() {
+    async fn test_proxy_http_rpc_request() {
         let ds = surrealdb::Datastore::new("memory").await.unwrap();
         let state = Arc::new(AppState::new(ds));
         let endpoint_id = state
@@ -290,7 +342,7 @@ mod tests {
             ))
             .unwrap();
 
-        let res = proxy_rpc_request(State(state), Path(endpoint_id), req)
+        let res = proxy_http_rpc_request(State(state), Path(endpoint_id), req)
             .await
             .unwrap()
             .into_response();

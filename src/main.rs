@@ -54,7 +54,7 @@ async fn main() -> Result<()> {
 
     tracing_subscriber::fmt::init();
 
-    // docker run --rm -it --name surrealdb -p 127.0.0.1:8000:8000 surrealdb/surrealdb:latest start --log trace --user root --pass root memory
+    // docker run --rm -it --name surrealdb -p 8000:8000 surrealdb/surrealdb:latest start --log trace --user root --pass root memory
     // let ds = Datastore::new("memory").await?;
     let ds = Datastore::new("file://Zeth/temp.db").await?;
 

@@ -3,6 +3,7 @@
   import active from "svelte-spa-router/active";
   // import {wrap} from 'svelte-spa-router/wrap'
   import routes from '../lib/routes';
+  import { loginStore } from "../stores/login";
 
   $: $location === "/" ? replace("/endpoints") : null; // redirect '/' to /endpoints
   $: routeSegments = $location.split('/').slice(1); // /endpoints/1 -> ['endpoints', '1']
@@ -42,9 +43,7 @@
       notifications
     </div>
 
-    <div>
-      logout
-    </div>
+    <button on:click={loginStore.logout}>logout</button>
 
   </div>
 

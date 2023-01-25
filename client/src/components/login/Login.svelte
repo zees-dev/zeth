@@ -1,90 +1,89 @@
+<!-- Component imports and setup -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import Surreal from 'surrealdb.js';
+  import { loginStore } from '../../stores/login';
 
-  let username = '';
+  export let toggleSignUp: () => void;
+
+  let loginDisabled = true;
+  let email = '';
   let password = '';
-  let passwordError = '';
+  let error = '';
 
-  function checkPassword(password: string) {
-    // perform basic checks on the password
-    if (password.length < 8) {
-      passwordError = 'Password must be at least 8 characters long';
-      return false;
+  async function handleLogin() {
+    if (loginDisabled) return;
+    try {
+      const token = await Surreal.Instance.signin({
+        NS: 'test',
+        DB: 'test',
+        SC: 'allusers',
+        user: email.toLowerCase(),
+        pass: password,
+      });
+      console.info('signed in to db: ', token);
+      loginStore.login(token);
+    } catch (err) {
+      error = err;
+      setTimeout(() => error = '', 3000);
     }
-    if (!/\d/.test(password)) {
-      passwordError = 'Password must contain at least one number';
-      return false;
-    }
-    if (!/[a-z]/.test(password)) {
-      passwordError = 'Password must contain at least one lowercase letter';
-      return false;
-    }
-    if (!/[A-Z]/.test(password)) {
-      passwordError = 'Password must contain at least one uppercase letter';
-      return false;
-    }
+  };
 
-    passwordError = '';
-    return true;
-  }
-
-  function handleSignup(event: Event) {
-    event.preventDefault();
-
-    if (!checkPassword(password)) {
-      return;
-    }
-
-    // make an arbitrary request to an endpoint with the username and password
-  }
-
-  function handleLogin(event) {
-    event.preventDefault();
-
-    // make an arbitrary request to an endpoint with the username and password
+  $: {
+    loginDisabled = email.length < 1 || password.length < 5;
   }
 </script>
 
-<form class="flex flex-col items-center h-screen">
-  <div class="w-full max-w-xs">
-    <label for="username" class="block font-bold mb-2 text-xl text-center">Username</label>
-    <input
-      id="username"
-      type="text"
-      bind:value={username}
-      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-    />
-  </div>
-
-  <div class="w-full max-w-xs mt-6">
-    <label for="password" class="block font-bold mb-2 text-xl text-center">Password</label>
-    <input
-      id="password"
-      type="password"
-      bind:value={password}
-      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-    />
-    {#if passwordError}
-      <p class="text-red-500 text-center mt-2">{passwordError}</p>
+<!-- Component template -->
+<div class="flex justify-center items-center h-screen">
+  <form class="bg-white p-6 rounded-lg flex flex-col" on:submit|preventDefault={handleLogin}>
+    <h2 class="text-lg font-medium mb-4 text-center">Log In</h2>
+    <div class="mb-4">
+      <label class="block text-gray-700 font-medium mb-2" for="email">
+        Email
+      </label>
+      <input
+        class="border border-gray-400 p-2 rounded-lg w-full"
+        type="email"
+        id="email"
+        bind:value={email}
+        required
+      >
+    </div>
+  
+    <div class="mb-4">
+      <label class="block text-gray-700 font-medium mb-2" for="password">
+        Password
+      </label>
+      <input
+        class="border border-gray-400 p-2 rounded-lg w-full"
+        type="password"
+        id="password"
+        bind:value={password}
+        required
+      >
+    </div>
+    {#if error}
+      <div class="text-red-500 text-sm mb-4">{error}</div>
     {/if}
-  </div>
-  <div class="w-full max-w-xs mt-6">
+  
     <button
-      type="submit"
-      on:click={handleSignup}
-      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      class={(loginDisabled ? "disabled" : "bg-blue-500 hover:bg-blue-600") + "text-white py-2 px-4 rounded-lg w-full mb-4"}
+      disabled={loginDisabled}
+    >
+      Log In
+    </button>
+  
+    <button
+      class="bg-white text-gray-600 py-2 px-4 rounded-lg hover:bg-gray-200 w-full"
+      on:click={toggleSignUp}
     >
       Sign Up
     </button>
-  </div>
+  </form>
+</div>
 
-  <div class="w-full max-w-xs mt-6">
-    <button
-      type="submit"
-      on:click={handleLogin}
-      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-    >
-      Login
-    </button>
-  </div>
-</form>
+<style>
+  form {
+    width: 20rem;
+  }
+</style>

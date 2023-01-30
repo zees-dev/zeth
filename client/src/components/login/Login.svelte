@@ -2,8 +2,14 @@
 <script lang="ts">
   import Surreal from 'surrealdb.js';
   import { loginStore } from '../../stores/login';
+  import { z } from "zod";
 
   export let toggleSignUp: () => void;
+
+  const formSchema = z.object({
+    email: z.string().email().min(3),
+    password: z.string().min(5),
+  });
 
   let loginDisabled = true;
   let email = '';
@@ -23,13 +29,13 @@
       console.info('signed in to db: ', token);
       loginStore.login(token);
     } catch (err) {
-      error = err;
+      error = err as string;
       setTimeout(() => error = '', 3000);
     }
   };
 
   $: {
-    loginDisabled = email.length < 1 || password.length < 5;
+    loginDisabled = !formSchema.safeParse({ email, password }).success
   }
 </script>
 

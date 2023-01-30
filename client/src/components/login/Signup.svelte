@@ -1,65 +1,32 @@
 <!-- Component imports and setup -->
 <script lang="ts">
   import Surreal from 'surrealdb.js';
+  import { z } from 'zod';
   import { loginStore } from '../../stores/login';
 
   export let toggleSignUp: () => void;
 
+  const formSchema = z.object({
+    email: z.string().email("Invalid email address"),
+    password: z.string()
+      .min(5, "Password must be atleast 5 characters")
+      // .regex(/[0-9]/, "Password must contain atleast 1 number")
+      // .regex(/[A-Z]/, "Password must contain atleast 1 uppercase letter")
+      .regex(/[a-z]/, "Password must contain atleast 1 lowercase letter"),
+    confirmPassword: z.string(),
+  }).superRefine(({ confirmPassword, password }, ctx) => {
+    if (confirmPassword !== password) {
+      ctx.addIssue({
+        code: "custom",
+        message: "The passwords did not match"
+      });
+    }
+  });
+
   let email = '';
   let password = '';
-  let passwordConfirm = '';
+  let confirmPassword = '';
   let error = '';
-
-  // Create a store for the password validation requirements
-  const passwordRequirements = {
-    length: {
-      satisfied: false,
-      message: 'At least 5 characters'
-    },
-    // upperCase: {
-    //   satisfied: false,
-    //   message: 'At least 1 uppercase letter'
-    // },
-    lowerCase: {
-      satisfied: false,
-      message: 'At least 1 lowercase letter'
-    },
-    // number: {
-    //   satisfied: false,
-    //   message: 'At least 1 number'
-    // }
-  };
-
-  // Function to validate the password
-  function validatePassword() {
-    // Check password length
-    if (password.length >= 5) {
-      passwordRequirements.length.satisfied = true;
-    } else {
-      passwordRequirements.length.satisfied = false;
-    }
-
-    // // Check for uppercase letter
-    // if (/[A-Z]/.test(password)) {
-    //   passwordRequirements.upperCase.satisfied = true;
-    // } else {
-    //   passwordRequirements.upperCase.satisfied = false;
-    // }
-
-    // Check for lowercase letter
-    if (/[a-z]/.test(password)) {
-      passwordRequirements.lowerCase.satisfied = true;
-    } else {
-      passwordRequirements.lowerCase.satisfied = false;
-    }
-
-    // // Check for number
-    // if (/\d/.test(password)) {
-    //   passwordRequirements.number.satisfied = true;
-    // } else {
-    //   passwordRequirements.number.satisfied = false;
-    // }
-  }
 
   async function handleSignUp() {
     if (signupDisabled) return;
@@ -76,14 +43,17 @@
       toggleSignUp(); // for next login
       loginStore.login(token);
     } catch (err) {
-      error = err;
+      error = err as string;
       setTimeout(() => error = '', 3000);
     }
   }
 
   let signupDisabled = true;
+  let validationErrors: { message: string}[] = [];
   $: {
-    signupDisabled = email.length < 1 || password.length < 5 || password !== passwordConfirm;
+    const validation = formSchema.safeParse({ email, password, confirmPassword });
+    signupDisabled = !validation.success
+    validationErrors = JSON.parse((validation as any).error)
   }
 </script>
 
@@ -113,7 +83,6 @@
         type="password"
         id="password"
         bind:value={password}
-        on:input={validatePassword}
         required
       >
     </div>
@@ -126,18 +95,20 @@
         class="border border-gray-400 p-2 rounded-lg w-full"
         type="password"
         id="password-confirm"
-        bind:value={passwordConfirm}
+        bind:value={confirmPassword}
         required
       >
     </div>
 
     <div class="mb-4">
       <div class="text-red-500 font-medium">
-        {#each Object.entries(passwordRequirements) as [key, requirement]}
-          <div class={requirement.satisfied ? 'text-green-500' : 'text-red-500'}>
-            {requirement.satisfied ? '✔' : '✖'} {requirement.message}
-          </div>
-        {/each}
+        {#if !formSchema.safeParse({ email, password, confirmPassword }).success}
+          {#each validationErrors as error }
+            <div class="text-red-500">
+              ❌ {error.message}
+            </div>
+          {/each}
+        {/if}
       </div>
     </div>
 

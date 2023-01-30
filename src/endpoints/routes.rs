@@ -338,6 +338,8 @@ async fn sse_handler(
 
 #[cfg(test)]
 mod tests {
+    use crate::surrealclient::SurrealHttpClient;
+
     use super::*;
     use hyper::Method;
 
@@ -373,7 +375,14 @@ mod tests {
     #[tokio::test]
     async fn test_proxy_http_rpc_request() {
         let ds = surrealdb::Datastore::new("memory").await.unwrap();
-        let state = Arc::new(AppState::new(ds));
+        let client = SurrealHttpClient::new(
+            "http://localhost:8000/sql",
+            "admin",
+            "admin",
+            "test",
+            "test",
+        );
+        let state = Arc::new(AppState::new(ds, client).await);
         let endpoint_id = state
             .endpoint_service
             .create(&types::Endpoint {

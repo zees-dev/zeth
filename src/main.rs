@@ -1,6 +1,5 @@
 #![allow(unused)] // TODO remove for prod.
 
-use anyhow::Result;
 use axum::{
     extract::{Json, Path},
     http::StatusCode,
@@ -22,17 +21,22 @@ use tower_http::services::ServeDir;
 pub mod db;
 
 mod endpoints;
+mod surrealclient;
 use endpoints::{routes as endpoints_routes, service::EndpointsService};
+
+use crate::surrealclient::SurrealHttpClient;
 
 pub struct AppState {
     endpoint_service: EndpointsService,
     rpc_channel_map:
         Mutex<HashMap<String, (Sender<hyper::body::Bytes>, Receiver<hyper::body::Bytes>)>>,
+    surreal_http_client: SurrealHttpClient,
 }
 
 impl AppState {
-    fn new(ds: Datastore) -> Self {
+    async fn new(ds: Datastore, surreal_http_client: SurrealHttpClient) -> Self {
         // TODO inject DB trait?
+        // TODO inject surreal http client trait?
 
         let rpc_channel_map = Mutex::new(HashMap::<
             String,
@@ -44,21 +48,39 @@ impl AppState {
         Self {
             endpoint_service,
             rpc_channel_map,
+            surreal_http_client,
         }
     }
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() -> Result<(), String> {
     // TODO - use clap for CLI
 
     tracing_subscriber::fmt::init();
 
+    // TODO: use surreal client - use db admin creds to check if scope exists (to determine whether db needs to be initted)
+
     // docker run --rm -it --name surrealdb -p 8000:8000 surrealdb/surrealdb:latest start --log trace --user root --pass root memory
     // let ds = Datastore::new("memory").await?;
     let ds = Datastore::new("file://Zeth/temp.db").await?;
+    tracing::info!("setting up client...");
 
-    let state = Arc::new(AppState::new(ds));
+    // TODO - get from config
+    let (surreal_rpc, admin_user, admin_pass, namespace, database) = (
+        "http://localhost:8000/sql",
+        "admin",
+        "admin",
+        "test",
+        "test",
+    );
+
+    let surreal_http_client =
+        SurrealHttpClient::new(surreal_rpc, admin_user, admin_pass, namespace, database);
+
+    surreal_http_client.setup_db().await.unwrap();
+
+    let state = Arc::new(AppState::new(ds, surreal_http_client).await);
 
     let app = Router::new()
         // .route("/", get(index_handler))
@@ -77,7 +99,8 @@ async fn main() -> Result<()> {
     tracing::info!("listening on {}...", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
-        .await?;
+        .await
+        .unwrap();
 
     Ok(())
 }

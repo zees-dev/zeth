@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.68"
 axum = { version = "0.6.1", features = ["headers", "ws"] }
+base64 = "0.21.0"
 chrono = "0.4.23"
 futures = "0.3.25"
 hyper = { version = "0.14.23", features = ["client"] }

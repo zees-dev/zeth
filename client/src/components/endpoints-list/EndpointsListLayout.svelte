@@ -1,17 +1,33 @@
 <script lang="ts">
+  import { web3ProviderStore } from "../../stores/web3provider";
+
+  // TODO: metamask connection button UI
 </script>
 
 <div class="content">
   <nav class="sub-nav">
     <div class="search-bar">search....</div>
-    <a
-      href="#/"
-      class="menu-item"
-      aria-label="Metamask"
-    >
-      Metamask
-      <i class="ri-database-2-line" />
-    </a>
+    {#if $web3ProviderStore.provider}
+      <a
+        href="#/"
+        class="menu-item"
+        aria-label="Metamask"
+        on:click={web3ProviderStore.disconnect}
+      >
+        Disconnect
+        <i class="ri-database-2-line" />
+      </a>
+    {:else}
+      <a
+        href="#/"
+        class="menu-item"
+        aria-label="Metamask"
+        on:click={web3ProviderStore.connect}
+      >
+        Metamask
+        <i class="ri-database-2-line" />
+      </a>
+    {/if}
     <a
       href={`#/endpoints/1`}
       class="menu-item"

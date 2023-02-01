@@ -1,8 +1,11 @@
 import { writable } from 'svelte/store';
 import { replace } from 'svelte-spa-router';
+import { web3ProviderStore } from './web3provider';
+
+const USER_TOKEN_KEY = 'token';
 
 export const loginStore = (() => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem(USER_TOKEN_KEY);
   const { subscribe, set } = writable({
     loggedIn: !!token,
     token: token,
@@ -12,18 +15,19 @@ export const loginStore = (() => {
 		subscribe,
 		// login: () => update(state => ({ })),
 		login: (token: string) => {
-      localStorage.setItem('token', token);
+      localStorage.setItem(USER_TOKEN_KEY, token);
       set({
         loggedIn: true,
         token,
       });
     },
     logout: () => {
-      localStorage.removeItem('token');
+      localStorage.removeItem(USER_TOKEN_KEY);
       set({
         loggedIn: false,
         token: '',
       });
+      web3ProviderStore.disconnect();
       replace('/'); // redirect to home
     },
 	};

@@ -7,18 +7,25 @@
   export let toggleSignUp: () => void;
 
   const formSchema = z.object({
-    email: z.string().email("Invalid email address"),
-    password: z.string()
+    email: z.string({ required_error: "Email is required" })
+      .email("Invalid email address")
+      .min(3, "Email must be atleast 3 characters")
+      .max(64, "Email must be atmost 64 characters")
+      .trim(),
+    password: z.string({ required_error: "Password is required"})
       .min(5, "Password must be atleast 5 characters")
+      .max(64, "Password must be atmost 64 characters")
       // .regex(/[0-9]/, "Password must contain atleast 1 number")
       // .regex(/[A-Z]/, "Password must contain atleast 1 uppercase letter")
       .regex(/[a-z]/, "Password must contain atleast 1 lowercase letter"),
     confirmPassword: z.string(),
+    // toc: z.enum(['on']),
   }).superRefine(({ confirmPassword, password }, ctx) => {
     if (confirmPassword !== password) {
       ctx.addIssue({
         code: "custom",
-        message: "The passwords did not match"
+        message: "The passwords did not match",
+        path: ['confirmPassword'],
       });
     }
   });
@@ -29,7 +36,7 @@
   let error = '';
 
   async function handleSignUp() {
-    if (signupDisabled) return;
+    if (validationErrors.length) return;
     try {
       const token = await Surreal.Instance.signup({
         NS: 'test',
@@ -48,12 +55,14 @@
     }
   }
 
-  let signupDisabled = true;
-  let validationErrors: { message: string}[] = [];
+  let validationErrors: string[] = [];
   $: {
-    const validation = formSchema.safeParse({ email, password, confirmPassword });
-    signupDisabled = !validation.success
-    validationErrors = JSON.parse((validation as any).error)
+    try {
+      formSchema.parse({ email, password, confirmPassword })
+      validationErrors = []
+    } catch (err) {
+      validationErrors = Object.values((err as any).flatten().fieldErrors).flat() as string[]
+    }
   }
 </script>
 
@@ -69,6 +78,7 @@
         class="border border-gray-400 p-2 rounded-lg w-full"
         type="email"
         id="email"
+        placeholder="Enter your email"
         bind:value={email}
         required
       >
@@ -101,11 +111,11 @@
     </div>
 
     <div class="mb-4">
-      <div class="text-red-500 font-medium">
+      <div class="text-red-500 font-normal">
         {#if !formSchema.safeParse({ email, password, confirmPassword }).success}
           {#each validationErrors as error }
             <div class="text-red-500">
-              ❌ {error.message}
+              ❌ {error}
             </div>
           {/each}
         {/if}
@@ -117,8 +127,8 @@
     {/if}
   
     <button
-      class={(signupDisabled ? "disabled" : "bg-blue-500 hover:bg-blue-600") + "text-white py-2 px-4 rounded-lg w-full mb-4"}
-      disabled={signupDisabled}
+      class={(validationErrors.length > 0 ? "disabled" : "bg-blue-500 hover:bg-blue-600") + "text-white py-2 px-4 rounded-lg w-full mb-4"}
+      disabled={validationErrors.length > 0}
     >
       Sign Up
     </button>

@@ -7,8 +7,8 @@
   export let toggleSignUp: () => void;
 
   const formSchema = z.object({
-    email: z.string().email().min(3),
-    password: z.string().min(5),
+    email: z.string().email().min(3).max(64).trim(),
+    password: z.string().min(5).max(64),
   });
 
   let loginDisabled = true;

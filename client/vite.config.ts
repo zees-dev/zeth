@@ -13,4 +13,7 @@ export default defineConfig({
       '@': __dirname + '/src',
     }
   },
+  build: { // dev build
+    minify: false
+  },
 })

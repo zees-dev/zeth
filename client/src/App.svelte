@@ -35,6 +35,13 @@
   //   }
   // }
   // admin();
+
+  $: {
+    const loggedIn = $loginStore.loggedIn && $loginStore.token;
+    if (!loggedIn) {
+      loginStore.logout();
+    };
+  }
 </script>
 
 <svelte:head>

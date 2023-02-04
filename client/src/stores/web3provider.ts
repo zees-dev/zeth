@@ -2,7 +2,12 @@ import { writable } from 'svelte/store';
 import { ethers } from "ethers";
 import Web3Modal from "web3modal";
 
-const METAMASK_CONNECTION_KEY = 'metamask';
+/**
+ * WEB3_CONNECT_CACHED_PROVIDER is the key used to store the provider connection status in localStorage
+ * It is used by web3modal to determine if a provider is already connected.
+ * note: metamask will set this storage item automatically to `"injected"` upon connection
+ */
+const METAMASK_CONNECTION_KEY = 'WEB3_CONNECT_CACHED_PROVIDER';
 
 export const web3ProviderStore = (() => {
   interface Store { provider?: ethers.providers.Web3Provider };
@@ -28,8 +33,6 @@ export const web3ProviderStore = (() => {
     const network = await provider.getNetwork();
     console.log(accounts);
     console.log(network.chainId);
-
-    localStorage.setItem(METAMASK_CONNECTION_KEY, 'true');
 
     set({ provider });
   }

@@ -3,7 +3,10 @@
   import active from "svelte-spa-router/active";
   // import {wrap} from 'svelte-spa-router/wrap'
   import routes from '../lib/routes';
+  import { parseJWT } from "../lib/utils";
   import { loginStore } from "../stores/login";
+
+  const userId = parseJWT($loginStore.token!)?.ID;
 
   $: $location === "/" ? replace("/endpoints") : null; // redirect '/' to /endpoints
   $: routeSegments = $location.split('/').slice(1); // /endpoints/1 -> ['endpoints', '1']
@@ -35,16 +38,18 @@
       {/each}
     </span>
 
-    <div>
-      user
-    </div>
+    <img
+      class="m-auto"
+      width="20"
+      src={`https://api.dicebear.com/5.x/bottts-neutral/svg?seed=${userId}&radius=25`}
+      alt="avatar"
+    />
 
     <div>
       notifications
     </div>
 
     <button on:click={loginStore.logout}>logout</button>
-
   </div>
 
   <aside class="sidebar">

@@ -1,7 +1,6 @@
 <script lang="ts">
   import './app.css'
   
-  import Surreal, { type Auth } from 'surrealdb.js';
   import Home from './components/Home.svelte';
   import Login from './components/login/Login.svelte';
   import Signup from './components/login/Signup.svelte';

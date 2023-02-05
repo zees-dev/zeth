@@ -2,16 +2,18 @@
 <script lang="ts">
   export let component: any = null;
   export let show = false;
+  export let onSuccessfulSubmission: () => void;
 
-  function hidePanel() {
+  function hidePanelAndCallback() {
     show = false;
+    onSuccessfulSubmission();
   }
 </script>
 
 {#if show}
-  <div class="overlay" on:click={hidePanel} />
+  <div class="overlay" on:click={() => { show = false }} />
   <aside class="panel">
-    <svelte:component this={component} onSuccessfulSubmission={hidePanel} />
+    <svelte:component this={component} onSuccessfulSubmission={hidePanelAndCallback} />
   </aside>
 {/if}
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { z } from "zod";
   import { dbStore } from "../../stores/db";
+  import { loginStore } from "../../stores/login";
 
   export let onSuccessfulSubmission: () => void = () => {};
 
@@ -80,7 +81,8 @@
         await testRPCConnection(type);
       }
 
-      const created = await $dbStore.db.create("endpoints", {
+      const created = await $dbStore.db.create("endpoint", {
+        user: $loginStore.userId, // TODO: this should be internally set
         name: endpointName,
         enabled: true,
         date_added: (new Date()).toISOString(),

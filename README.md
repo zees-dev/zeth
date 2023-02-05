@@ -56,7 +56,7 @@ DEFINE TABLE user SCHEMAFULL
   PERMISSIONS 
     FOR select, update WHERE id = \$auth.id, 
     FOR create, delete NONE;
-DEFINE FIELD user ON user TYPE string;
+DEFINE FIELD user ON user TYPE string ASSERT is::email(\$value);
 DEFINE FIELD pass ON user TYPE string;
 DEFINE FIELD tags ON user TYPE array;
 DEFINE INDEX idx_user ON user COLUMNS user UNIQUE;
@@ -101,22 +101,22 @@ curl -X POST \
   http://localhost:8000/sql
 ```
 
-**Setup endpoints table:**
+**Setup endpoint table:**
 
 ```sh
 DATA="
 BEGIN TRANSACTION;
-DEFINE TABLE endpoints SCHEMAFULL
+DEFINE TABLE endpoint SCHEMAFULL
   PERMISSIONS 
-    FOR select, update, delete WHERE id = \$auth.id,
-    FOR create FULL;
-DEFINE FIELD name ON endpoints TYPE string;
-DEFINE FIELD enabled ON endpoints TYPE bool;
-DEFINE FIELD date_added ON endpoints TYPE datetime;
-DEFINE FIELD rpc_url ON endpoints TYPE string;
-DEFINE FIELD type ON endpoints TYPE string;
-DEFINE INDEX idx_endpoints_name ON endpoints COLUMNS name UNIQUE;
-DEFINE INDEX idx_endpoints_rpc_url ON endpoints COLUMNS rpc_url UNIQUE;
+    FOR select, create, update, delete WHERE user = \$auth.id;
+DEFINE FIELD user ON endpoint TYPE record(user);
+DEFINE FIELD name ON endpoint TYPE string;
+DEFINE FIELD enabled ON endpoint TYPE bool;
+DEFINE FIELD date_added ON endpoint TYPE datetime;
+DEFINE FIELD rpc_url ON endpoint TYPE string;
+DEFINE FIELD type ON endpoint TYPE string;
+DEFINE INDEX idx_endpoint_name ON endpoint COLUMNS user, name UNIQUE;
+DEFINE INDEX idx_endpoint_rpc_url ON endpoint COLUMNS user, rpc_url UNIQUE;
 -- TODO: define event for creation
 -- TODO: define event for update
 -- TODO: define event for deletion

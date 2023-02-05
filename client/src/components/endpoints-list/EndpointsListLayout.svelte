@@ -1,6 +1,9 @@
 <script lang="ts">
   import { web3ProviderStore } from "../../stores/web3provider";
+  import AddEndpoint from "../endpoint/AddEndpoint.svelte";
+  import SidePanel from "../SidePanel.svelte";
 
+  let showAddEndpointPanel = false;
   // TODO: metamask connection button UI
 </script>
 
@@ -40,6 +43,8 @@
 
   <section>
     <h1>Endpoints</h1>
+    <button on:click={() => showAddEndpointPanel = true}>Add endpoint</button>
+    <SidePanel bind:show={showAddEndpointPanel} component={AddEndpoint} />
     <!-- CARD (node stats) - left -->
     <!-- Button add node (right) -->
 

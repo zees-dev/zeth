@@ -1,7 +1,8 @@
 <script lang="ts">
   import { z } from "zod";
+  import { dbStore } from "../../stores/db";
 
-  let submissionDisabled = true;
+  export let onSuccessfulSubmission: () => void = () => {};
 
   const formSchema = z.object({
     endpointName: z.string()
@@ -13,25 +14,77 @@
     symbol: z.string().min(3).max(10).trim(),
   });
 
+  let submissionError: string | undefined;
+  let loading = false;
   let endpointName = '';
   let rpcUrl = '';
   let testConnection = true;
   let symbol = 'ETH';
   let blockExplorerUrl = '';
 
-  function handleSubmit() {
-    if (validationErrors.length) return;
-
-    // Perform external API request if test connection is checked
-    if (testConnection) {
-      // Perform API request here
+  async function testRPCConnection(type: "http" | "ws") {
+    if (type === 'http') {
+      const res = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "jsonrpc": "2.0",
+          "method": "eth_blockNumber",
+          "params": [],
+          "id": 1
+        })
+      });
+      console.log("res", res)
+      if (!res.ok) {
+        throw new Error(`Failed to connect to ${rpcUrl}`);
+      }
+    } else {
+      const socket = new WebSocket(rpcUrl);
+      socket.onopen = () => {
+        socket.send(JSON.stringify({
+          "jsonrpc": "2.0",
+          "method": "eth_blockNumber",
+          "params": [],
+          "id": 1
+        }));
+      }
+      socket.onmessage = (msg) => {
+        const res = JSON.parse(msg.data);
+        console.log("res", res)
+        if (res.error) {
+          throw new Error(`Failed to connect to ${rpcUrl}`);
+        }
+      }
     }
+  }
 
-    // TODO: ensure endpoint name is unique
-    // TODO: ensure endpoint rpc url is unique
+  async function handleSubmit() {
+    if (validationErrors.length) return;
+    loading = true;
+    try {
+      const type = rpcUrl.startsWith('http') ? 'http' : 'ws'
+      // perform external API request if test connection is checked
+      if (testConnection) {
+        testRPCConnection(type);
+      }
 
-    // Submit form data
-    console.log({ endpointName, rpcUrl, symbol, blockExplorerUrl });
+      const created = await $dbStore.db.create("endpoints", {
+        name: endpointName,
+        enabled: true,
+        date_added: (new Date()).toISOString(),
+        rpc_url: rpcUrl,
+        type,
+      });
+      console.info("created", created);
+      onSuccessfulSubmission();
+    } catch(err) {
+      submissionError = err as string;
+      setTimeout(() => submissionError = undefined, 5000);
+    } finally {
+      loading = false;
+    }
   }
 
   interface ValidationError {
@@ -50,12 +103,12 @@
   }
 </script>
 
-<form on:submit|preventDefault={handleSubmit}>
+<form style="width: 100%;" on:submit|preventDefault={handleSubmit}>
   <div class="flex flex-col mb-4">
     <label class="text-sm font-medium mb-2">Endpoint name</label>
     <input type="text" class="border p-2 rounded" bind:value={endpointName} required />
     {#if validationErrors.find(i => i.path.includes('endpointName'))}
-      <div class="text-red-500 self-end mr-2">
+      <div class="text-sm text-red-500 self-end mr-2">
         ❌ {validationErrors.find(i => i.path.includes('endpointName'))?.message}
       </div>
     {/if}
@@ -73,7 +126,7 @@
       <label class="text-sm font-medium ml-2">Test connection</label>
     </div>
     {#if validationErrors.find(i => i.path.includes('rpcUrl'))}
-      <div class="text-red-500 self-end mr-2">
+      <div class="text-sm text-red-500 self-end mr-2">
         ❌ {validationErrors.find(i => i.path.includes('rpcUrl'))?.message}
       </div>
     {/if}
@@ -86,7 +139,7 @@
       required
       placeholder="ETH" />
     {#if validationErrors.find(i => i.path.includes('symbol'))}
-      <div class="text-red-500 self-end mr-2">
+      <div class="text-sm text-red-500 self-end mr-2">
         ❌ {validationErrors.find(i => i.path.includes('symbol'))?.message}
       </div>
     {/if}
@@ -98,10 +151,16 @@
       bind:value={blockExplorerUrl}
       placeholder="https://etherscan.io" />
   </div>
+  
+  {#if submissionError}
+    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+      <p>{submissionError}</p>
+    </div>
+  {/if}
 
   <button
     type="submit"
-    class={(validationErrors.length > 0 ? "disabled" : "bg-blue-500 hover:bg-blue-600") + "text-white p-2 rounded flex m-auto"}
+    class={(validationErrors.length > 0 ? "disabled bg-gray-300" : "bg-blue-500 hover:bg-blue-600") + " text-white p-2 rounded flex m-auto"}
     disabled={validationErrors.length > 0}
   >
     Create

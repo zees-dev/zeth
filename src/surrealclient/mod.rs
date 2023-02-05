@@ -44,6 +44,7 @@ impl SurrealHttpClient {
         if let Some(result) = info_res.result {
             if !result.tb.contains_key("user") {
                 let data = r#"
+                    BEGIN TRANSACTION;
                     DEFINE TABLE user SCHEMAFULL
                     PERMISSIONS
                         FOR select, update WHERE id = $auth.id,
@@ -52,11 +53,13 @@ impl SurrealHttpClient {
                     DEFINE FIELD pass ON user TYPE string;
                     DEFINE FIELD tags ON user TYPE array;
                     DEFINE INDEX idx_user ON user COLUMNS user UNIQUE;
-                    "#;
+                    COMMIT TRANSACTION;
+                "#;
                 self.post(data).await?;
             }
             if !result.sc.contains_key("allusers") {
                 let data = r#"
+                    BEGIN TRANSACTION;
                     DEFINE SCOPE allusers
                     -- the JWT session will be valid for 14 days
                     SESSION 14d
@@ -69,9 +72,31 @@ impl SurrealHttpClient {
                     -- It is designed to check if a record exists in the database.
                     -- If set, it needs to return a record or a record id
                     -- The variables can be passed in to the signin method
-                    SIGNIN ( SELECT * FROM user WHERE user = string::lowercase(string::trim($user)) AND crypto::argon2::compare(pass, $pass) )
+                    SIGNIN ( SELECT * FROM user WHERE user = string::lowercase(string::trim($user)) AND crypto::argon2::compare(pass, $pass) );
                     -- this optional clause will be run when calling the signup method for this scope
-                    "#;
+                    COMMIT TRANSACTION;
+                "#;
+                self.post(data).await?;
+            }
+            if !result.tb.contains_key("endpoints") {
+                let data = r#"
+                    BEGIN TRANSACTION;
+                    DEFINE TABLE endpoints SCHEMAFULL
+                        PERMISSIONS 
+                            FOR select, update, delete WHERE id = $auth.id,
+                            FOR create FULL;
+                    DEFINE FIELD name ON endpoints TYPE string;
+                    DEFINE FIELD enabled ON endpoints TYPE bool;
+                    DEFINE FIELD date_added ON endpoints TYPE datetime;
+                    DEFINE FIELD rpc_url ON endpoints TYPE string;
+                    DEFINE FIELD type ON endpoints TYPE string;
+                    DEFINE INDEX idx_endpoints_name ON endpoints COLUMNS name UNIQUE;
+                    DEFINE INDEX idx_endpoints_rpc_url ON endpoints COLUMNS rpc_url UNIQUE;
+                    -- TODO: define event for creation
+                    -- TODO: define event for update
+                    -- TODO: define event for deletion
+                    COMMIT TRANSACTION;
+                "#;
                 self.post(data).await?;
             }
         } else {

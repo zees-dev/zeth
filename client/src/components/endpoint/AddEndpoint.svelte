@@ -34,9 +34,8 @@
           "method": "eth_blockNumber",
           "params": [],
           "id": 1
-        })
+        }),
       });
-      console.log("res", res)
       if (!res.ok) {
         throw new Error(`Failed to connect to ${rpcUrl}`);
       }
@@ -50,14 +49,25 @@
           "id": 1
         }));
       }
-      socket.onmessage = (msg) => {
-        const res = JSON.parse(msg.data);
-        console.log("res", res)
-        if (res.error) {
-          throw new Error(`Failed to connect to ${rpcUrl}`);
-        }
+      try {
+        await new Promise((resolve, reject) => {
+          socket.onmessage = (msg) => {
+            const res = JSON.parse(msg.data);
+            if (res.error) {
+              reject(res.error);
+              return;
+            }
+            resolve(res);
+          }
+          socket.onerror = (err) => reject(err);
+        })
+      } catch (err) {
+        throw new Error(`Failed to connect to ${rpcUrl}`);
+      } finally {
+        socket!.close();
       }
-    }
+    } 
+
   }
 
   async function handleSubmit() {
@@ -67,7 +77,7 @@
       const type = rpcUrl.startsWith('http') ? 'http' : 'ws'
       // perform external API request if test connection is checked
       if (testConnection) {
-        testRPCConnection(type);
+        await testRPCConnection(type);
       }
 
       const created = await $dbStore.db.create("endpoints", {
@@ -119,7 +129,7 @@
       class="border p-2 rounded"
       bind:value={rpcUrl} 
       required
-      pattern="^(wss|ws|https|http)://[a-zA-Z0-9._-]+"
+      pattern="^(http|https|ws|wss):\/\/.+"
       placeholder="wss://mainnet.infura.io/ws/v3/abcdef, https://mainnet.infura.io/v3/abcdef" />
     <div class="mt-2 self-end mr-2" on:click={() => testConnection = !testConnection}>
       <input type="checkbox" checked={testConnection} />

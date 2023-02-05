@@ -1,7 +1,7 @@
 <!-- Component imports and setup -->
 <script lang="ts">
-  import Surreal from 'surrealdb.js';
   import { z } from 'zod';
+  import { dbStore } from '../../stores/db';
   import { loginStore } from '../../stores/login';
 
   export let toggleSignUp: () => void;
@@ -38,7 +38,7 @@
   async function handleSignUp() {
     if (validationErrors.length) return;
     try {
-      const token = await Surreal.Instance.signup({
+      const token = await $dbStore.db.signup({
         NS: 'test',
         DB: 'test',
         SC: 'allusers',

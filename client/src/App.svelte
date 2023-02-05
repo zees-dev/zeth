@@ -6,14 +6,11 @@
   import Login from './components/login/Login.svelte';
   import Signup from './components/login/Signup.svelte';
   import { loginStore } from './stores/login';
-
-  // docker run --rm -it --name surrealdb -p 8000:8000 surrealdb/surrealdb:latest start --log trace --user admin --pass admin memory
-  const db = Surreal.Instance;
-  const surealdbUrl = 'http://127.0.0.1:8000/rpc';
+  import { dbStore } from './stores/db';
 
   let signup = false;
   const toggleSignUp = () => signup = !signup;
-  (window as any).db = Surreal.Instance; // for browser debugging
+  (window as any).db = $dbStore.db; // for browser debugging
 
   // async function admin() {
   //   try {
@@ -48,11 +45,11 @@
   <title>Zeth</title>
 </svelte:head>
 
-{#await db.connect(surealdbUrl)}
+{#await dbStore.connect()}
   <p>Connecting to db...</p>
 {:then}
   {#if $loginStore.loggedIn && $loginStore.token}
-    {#await db.authenticate($loginStore.token)}
+    {#await $dbStore.db.authenticate($loginStore.token)}
       <p>Signing in to db...</p>
     {:then}
       <Home />
@@ -74,6 +71,3 @@
 {:catch}
   <p class="bg-error">Could not connect</p>
 {/await}
-
-<style>
-</style>

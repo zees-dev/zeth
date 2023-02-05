@@ -15,6 +15,10 @@ export const dbStore = (() => {
       state.db.connect(SURREAL_DB_URL);
       return state;
     }),
+    disconnect: async () => update(state => {
+      state.db.invalidate();
+      return state;
+    }),
 	};
 })();
 

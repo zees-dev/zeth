@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { replace } from 'svelte-spa-router';
 import { web3ProviderStore } from './web3provider';
+import { dbStore } from './db';
 
 const USER_TOKEN_KEY = 'token';
 
@@ -28,6 +29,7 @@ export const loginStore = (() => {
         token: '',
       });
       web3ProviderStore.disconnect();
+      dbStore.disconnect();
       replace('/'); // redirect to home
     },
 	};

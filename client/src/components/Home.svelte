@@ -122,6 +122,7 @@
 
 		display: grid;
 		grid-template: 1fr 15fr/ 5rem auto;
+    gap: 0.5rem;
 	}
 
   .logo {

@@ -21,7 +21,22 @@
 
   <div class="heading">
     <span class="heading-route">
-      {#each routeSegments as segment, i}
+      <div class="text-sm breadcrumbs">
+        <ul>
+          {#each routeSegments as segment, i}
+            <li>
+              <a
+                style="text-decoration: underline;"
+                href={'/' + routeSegments.slice(0, i+1).join('/')}
+                use:link
+              >
+                {segment}
+              </a>
+            </li> 
+          {/each}
+        </ul>
+      </div>
+      <!-- {#each routeSegments as segment, i}
         <a
           style="text-decoration: underline;"
           href={'/' + routeSegments.slice(0, i+1).join('/')}
@@ -32,7 +47,7 @@
         {#if i < routeSegments.length - 1}
           {" > "}
         {/if}
-      {/each}
+      {/each} -->
     </span>
 
     <img

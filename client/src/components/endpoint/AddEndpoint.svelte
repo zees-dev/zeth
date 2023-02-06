@@ -67,8 +67,7 @@
       } finally {
         socket!.close();
       }
-    } 
-
+    }
   }
 
   async function handleSubmit() {

@@ -151,5 +151,6 @@
     grid-template-columns: 1fr auto;
     padding: 0rem 1rem;
     grid-gap: 0.5rem;
+    align-items: center;
   }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '@iconify/svelte';
   import Router, { replace, link, location } from "svelte-spa-router";
   import active from "svelte-spa-router/active";
   // import {wrap} from 'svelte-spa-router/wrap'
@@ -50,18 +51,20 @@
       {/each} -->
     </span>
 
-    <img
-      class="m-auto"
-      width="20"
-      src={`https://api.dicebear.com/5.x/bottts-neutral/svg?seed=${$loginStore.userId}&radius=25`}
-      alt="avatar"
-    />
-
-    <div>
-      notifications
-    </div>
-
-    <button on:click={loginStore.logout}>logout</button>
+    <button>
+      <img
+        class="m-auto"
+        width="20"
+        src={`https://api.dicebear.com/5.x/bottts-neutral/svg?seed=${$loginStore.userId}&radius=25`}
+        alt="avatar"
+      />
+    </button>
+    <button>
+      <Icon icon="carbon:notification" width=20 />
+    </button>
+    <button on:click={loginStore.logout}>
+      <Icon icon="carbon:logout" width=20 />
+    </button>
   </div>
 
   <aside class="sidebar">

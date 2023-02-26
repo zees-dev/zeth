@@ -591,6 +591,18 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
+"@iconify/svelte@^3.1.0":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/@iconify/svelte/-/svelte-3.1.0.tgz#a295d95b2fefec437b296c25a8059a620c95c029"
+  integrity sha512-G1w1dcO7eiD+JmQJNwNW4qnAn86oQxKLe1P/iAPjJ0qYYuF7Pb60TPrlcj4+2gu4SXe3a0Jrv++8YmceG+gX/g==
+  dependencies:
+    "@iconify/types" "^2.0.0"
+
+"@iconify/types@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@iconify/types/-/types-2.0.0.tgz#ab0e9ea681d6c8a1214f30cd741fe3a20cc57f57"
+  integrity sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==
+
 "@jridgewell/gen-mapping@^0.3.2":
   version "0.3.2"
   resolved "https://registry.yarnpkg.com/@jridgewell/gen-mapping/-/gen-mapping-0.3.2.tgz#c1aedc61e853f2bb9f5dfe6d4442d3b565b253b9"

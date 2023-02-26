@@ -39,6 +39,7 @@ impl SurrealHttpClient {
         }
     }
 
+    // TODO: read setup from surreal ql file instead
     pub async fn setup_db(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let info_res = self.post("INFO FOR DB;").await?;
         if let Some(result) = info_res.result {
@@ -90,6 +91,8 @@ impl SurrealHttpClient {
                     DEFINE FIELD date_added ON endpoint TYPE datetime;
                     DEFINE FIELD rpc_url ON endpoint TYPE string;
                     DEFINE FIELD type ON endpoint TYPE string;
+                    DEFINE FIELD symbol ON endpoint TYPE string;
+                    DEFINE FIELD block_explorer_url ON endpoint TYPE string;
                     DEFINE INDEX idx_endpoint_name ON endpoint COLUMNS user, name UNIQUE;
                     DEFINE INDEX idx_endpoint_rpc_url ON endpoint COLUMNS user, rpc_url UNIQUE;
                     -- TODO: define event for creation

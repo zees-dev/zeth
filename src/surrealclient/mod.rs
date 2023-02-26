@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use tokio::net::TcpStream;
 
+#[derive(Clone)]
 pub struct SurrealHttpClient {
     url: String,
     username: String,

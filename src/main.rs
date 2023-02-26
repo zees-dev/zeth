@@ -14,11 +14,8 @@ use std::{
     net::SocketAddr,
     sync::{Arc, Mutex},
 };
-use surrealdb::Datastore;
 use tokio::sync::broadcast::{Receiver, Sender};
 use tower_http::services::ServeDir;
-
-pub mod db;
 
 mod endpoints;
 mod surrealclient;
@@ -34,8 +31,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    async fn new(ds: Datastore, surreal_http_client: SurrealHttpClient) -> Self {
-        // TODO inject DB trait?
+    async fn new(surreal_http_client: SurrealHttpClient) -> Self {
         // TODO inject surreal http client trait?
 
         let rpc_channel_map = Mutex::new(HashMap::<
@@ -43,7 +39,7 @@ impl AppState {
             (Sender<hyper::body::Bytes>, Receiver<hyper::body::Bytes>),
         >::new());
 
-        let endpoint_service = EndpointsService::new(ds);
+        let endpoint_service = EndpointsService::new(surreal_http_client.clone());
 
         Self {
             endpoint_service,
@@ -58,12 +54,6 @@ async fn main() -> Result<(), String> {
     // TODO - use clap for CLI
 
     tracing_subscriber::fmt::init();
-
-    // TODO: use surreal client - use db admin creds to check if scope exists (to determine whether db needs to be initted)
-
-    // docker run --rm -it --name surrealdb -p 8000:8000 surrealdb/surrealdb:latest start --log trace --user root --pass root memory
-    // let ds = Datastore::new("memory").await?;
-    let ds = Datastore::new("file://Zeth/temp.db").await?;
     tracing::info!("setting up client...");
 
     // TODO - get from config
@@ -80,7 +70,7 @@ async fn main() -> Result<(), String> {
 
     surreal_http_client.setup_db().await.unwrap();
 
-    let state = Arc::new(AppState::new(ds, surreal_http_client).await);
+    let state = Arc::new(AppState::new(surreal_http_client).await);
 
     let app = Router::new()
         // .route("/", get(index_handler))

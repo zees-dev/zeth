@@ -1,25 +1,44 @@
-all: clean tidy test build run
+all: clean test build run
 
 clean:
 	rm -rf zeth
 	rm -rf Zeth/
 	rm -rf ./**/.ethereum
-
-tidy:
-	go mod tidy
+	# cargo clean
+.PHONY clean
 
 test:
-	go test -v ./...
+	# TODO
 .PHONY: test
 
+db:
+	docker run --rm -it --name surrealdb \
+		-v ${PWD}/Zeth:/Zeth/ \
+		-p 8000:8000 \
+		surrealdb/surrealdb:latest \
+		start --log trace --user admin --pass admin file://Zeth/zeth.db
+.PHONY: client
+
+client:
+	cd client && yarn dev
+.PHONY: client
+
+server:
+	cargo run
+.PHONY: server
+
 build:
-	go build -o zeth cmd/zeth/main.go
+	cargo build
+.PHONY: build
 
 run:
-	go run cmd/zeth/*.go
+	cargo run
+.PHONY: run
 
 data:
-	./scripts/register_nodes.sh
+	# TODO
+	# ./scripts/register_nodes.sh
+.PHONY: data
 
 
 # run:

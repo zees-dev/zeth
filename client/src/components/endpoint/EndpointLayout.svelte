@@ -22,12 +22,11 @@
 </script>
 
 <div class="content">
-  <nav class="sub-nav overflow-y-auto">
+  <nav class="sub-nav overflow-y-auto overflow-x-hidden">
     {#await getEndpoint(params.endpointId)}
       <Spinner size="lg" />
     {:then endpoints}
       {#each endpoints as endpoint}
-        <h1 class="search-bar">&gt {endpoint.name} &lt</h1>
         <a
           href={`/endpoints/${params.endpointId}`}
           class="menu-item"
@@ -35,8 +34,7 @@
           use:link
           use:active={{ path: `/endpoints/${params.endpointId}`, className: "current-route" }}
         >
-          Status
-          <i class="ri-database-2-line" />
+          <h1 class="search-bar">&gt {endpoint.name} &lt</h1>
         </a>
         <a
           href={`/endpoints/${params.endpointId}/rpc-log`}
@@ -46,7 +44,6 @@
           use:active={{ path: `/endpoints/${params.endpointId}/rpc-log`, className: "current-route" }}
         >
           RPC Log
-          <i class="ri-database-2-line" />
         </a>
         <!-- TODO -->
         <!--

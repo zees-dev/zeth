@@ -6,6 +6,11 @@
   import SidePanel from "../SidePanel.svelte";
   import Spinner from "../Spinner.svelte";
   import type { Endpoint } from "../endpoint/types";
+    import Icon from "@iconify/svelte";
+    import { formatDate } from "../../lib/utils";
+    import { link, push } from "svelte-spa-router";
+    import EndpointPanel from "./EndpointPanel.svelte";
+    import ProtocolBadge from "./ProtocolBadge.svelte";
 
   let showAddEndpointPanel = false;
   // TODO: metamask connection button UI
@@ -21,6 +26,7 @@
     try {
       const response = await $dbStore.db.query("SELECT * FROM endpoint;");
       endpoints = (response as any[])[0].result as Endpoint[];
+      console.log(response);
     } catch(err) {
       endpoints = undefined;
       err = err;
@@ -31,7 +37,7 @@
 </script>
 
 <div class="content">
-  <nav class="sub-nav overflow-y-auto">
+  <nav class="sub-nav overflow-y-auto overflow-x-hidden">
     <div class="search-bar">search....</div>
     {#if $web3ProviderStore.provider}
       <button
@@ -55,11 +61,7 @@
         <div class="indicator w-[90%]">
           <div class="indicator-item">
             <div class="tooltip" data-tip={ep.rpc_url}>
-              {#if ep.type === 'http'}
-                <div class="indicator-item badge badge-secondary text-xs">{ep.type}</div>
-              {:else if ep.type === 'ws'}
-                <div class="indicator-item badge badge-accent text-xs">{ep.type}</div>
-              {/if}
+              <ProtocolBadge type={ep.type} />
             </div>
           </div>
           <a
@@ -76,7 +78,7 @@
     {/if}
   </nav>
 
-  <section>
+  <section class="mr-2">
     <h1 class="text-2xl font-bold">Endpoints</h1>
 
     {#if loading}
@@ -125,10 +127,7 @@
       </div>
 
       {#each endpoints as ep (ep.id)}
-        <div class="flex flex-row">
-          <h2>{ep.name}</h2>
-          <p>-{ep.rpc_url}</p>
-        </div>
+        <EndpointPanel endpoint={ep} class="my-2"/>
       {/each}
     {:else if err}
       <p class="bg-error">failed to fetch endpoints: {err}</p>

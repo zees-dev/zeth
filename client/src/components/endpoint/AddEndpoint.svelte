@@ -1,7 +1,9 @@
 <script lang="ts">
   import { z } from "zod";
+  import { endpointType, testRPCConnection } from "../../lib/utils";
   import { dbStore } from "../../stores/db";
   import { loginStore } from "../../stores/login";
+    import Spinner from "../Spinner.svelte";
 
   export let onSuccessfulSubmission: () => void = () => {};
 
@@ -16,6 +18,7 @@
   });
 
   let submissionError: string | undefined;
+  let testConnectionLoading = false;
   let loading = false;
   let endpointName = '';
   let rpcUrl = '';
@@ -23,62 +26,17 @@
   let symbol = 'ETH';
   let blockExplorerUrl = '';
 
-  async function testRPCConnection(type: "http" | "ws") {
-    if (type === 'http') {
-      const res = await fetch(rpcUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          "jsonrpc": "2.0",
-          "method": "eth_blockNumber",
-          "params": [],
-          "id": 1
-        }),
-      });
-      if (!res.ok) {
-        throw new Error(`Failed to connect to ${rpcUrl}`);
-      }
-    } else {
-      const socket = new WebSocket(rpcUrl);
-      socket.onopen = () => {
-        socket.send(JSON.stringify({
-          "jsonrpc": "2.0",
-          "method": "eth_blockNumber",
-          "params": [],
-          "id": 1
-        }));
-      }
-      try {
-        await new Promise((resolve, reject) => {
-          socket.onmessage = (msg) => {
-            const res = JSON.parse(msg.data);
-            if (res.error) {
-              reject(res.error);
-              return;
-            }
-            resolve(res);
-          }
-          socket.onerror = (err) => reject(err);
-        })
-      } catch (err) {
-        throw new Error(`Failed to connect to ${rpcUrl}`);
-      } finally {
-        socket!.close();
-      }
-    }
-  }
-
   async function handleSubmit() {
     if (validationErrors.length) return;
     loading = true;
     try {
-      const type = rpcUrl.startsWith('http') ? 'http' : 'ws'
       // perform external API request if test connection is checked
       if (testConnection) {
-        await testRPCConnection(type);
+        testConnectionLoading = true;
+        await testRPCConnection(rpcUrl);
+        testConnectionLoading = false;
       }
+      const type = endpointType(rpcUrl);
 
       const created = await $dbStore.db.create("endpoint", {
         user: $loginStore.userId, // TODO: this should be internally set
@@ -87,6 +45,8 @@
         date_added: (new Date()).toISOString(),
         rpc_url: rpcUrl,
         type,
+        symbol,
+        block_explorer_url: blockExplorerUrl,
       });
       console.info("created", created);
       onSuccessfulSubmission();
@@ -94,6 +54,7 @@
       submissionError = err as string;
       setTimeout(() => submissionError = undefined, 5000);
     } finally {
+      testConnectionLoading = false;
       loading = false;
     }
   }
@@ -132,9 +93,14 @@
       required
       pattern="^(http|https|ws|wss):\/\/.+"
       placeholder="wss://mainnet.infura.io/ws/v3/abcdef, https://mainnet.infura.io/v3/abcdef" />
-    <div class="mt-2 self-end mr-2" on:click={() => testConnection = !testConnection}>
+    <div class="mt-2 self-end mr-2 flex flex-row" on:click={() => testConnection = !testConnection}>
+      {#if testConnectionLoading}
+        <Spinner size="sm" class="mr-4"/>
+      {/if}
       <input type="checkbox" checked={testConnection} />
-      <label class="text-sm font-medium ml-2">Test connection</label>
+      <label class="text-sm font-medium ml-2 flex place-items-center">
+        Test connection
+      </label>
     </div>
     {#if validationErrors.find(i => i.path.includes('rpcUrl'))}
       <div class="text-sm text-red-500 self-end mr-2">
@@ -171,8 +137,8 @@
 
   <button
     type="submit"
-    class={(validationErrors.length > 0 ? "disabled bg-gray-300" : "bg-blue-500 hover:bg-blue-600") + " text-white p-2 rounded flex m-auto"}
-    disabled={validationErrors.length > 0}
+    class={(validationErrors.length > 0 || loading ? "disabled bg-gray-300" : "bg-blue-500 hover:bg-blue-600") + " text-white p-2 rounded flex m-auto"}
+    disabled={validationErrors.length > 0 || loading}
   >
     Create
   </button>

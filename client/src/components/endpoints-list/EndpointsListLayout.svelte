@@ -6,11 +6,8 @@
   import SidePanel from "../SidePanel.svelte";
   import Spinner from "../Spinner.svelte";
   import type { Endpoint } from "../endpoint/types";
-    import Icon from "@iconify/svelte";
-    import { formatDate } from "../../lib/utils";
-    import { link, push } from "svelte-spa-router";
-    import EndpointPanel from "./EndpointPanel.svelte";
-    import ProtocolBadge from "./ProtocolBadge.svelte";
+  import EndpointPanel from "./EndpointPanel.svelte";
+  import ProtocolBadge from "./ProtocolBadge.svelte";
 
   let showAddEndpointPanel = false;
   // TODO: metamask connection button UI

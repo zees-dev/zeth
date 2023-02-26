@@ -6,20 +6,22 @@ A web based interface to manage your ethereum node(s).
 
 ### Development
 
-Run frontend:
+Open 3 shells and run the following:
 
 ```sh
-cd app
-npm run dev
+# run persistent db (via docker)
+make db
 ```
-
-Run backend:
 
 ```sh
-make run
+# run client
+make client
 ```
 
-View UI at [http://localhost:7000](http://localhost:7000)
+```sh
+# run server
+make server
+```
 
 ---
 
@@ -115,6 +117,8 @@ DEFINE FIELD enabled ON endpoint TYPE bool;
 DEFINE FIELD date_added ON endpoint TYPE datetime;
 DEFINE FIELD rpc_url ON endpoint TYPE string;
 DEFINE FIELD type ON endpoint TYPE string;
+DEFINE FIELD symbol ON endpoint TYPE string;
+DEFINE FIELD block_explorer_url ON endpoint TYPE string;
 DEFINE INDEX idx_endpoint_name ON endpoint COLUMNS user, name UNIQUE;
 DEFINE INDEX idx_endpoint_rpc_url ON endpoint COLUMNS user, rpc_url UNIQUE;
 -- TODO: define event for creation

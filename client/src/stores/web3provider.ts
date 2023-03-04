@@ -25,7 +25,15 @@ export const web3ProviderStore = (() => {
   });
 
   async function connect() {
-    const instance = await web3Modal.connect();
+    let instance;
+    try {
+      instance = await web3Modal.connect();
+    } catch (e) {
+      console.warn("could not get a wallet connection; disconnecting...", e);
+      disconnect();
+      return;
+    }
+
     const provider = new ethers.providers.Web3Provider(instance);
     // const signer = provider.getSigner();
 
@@ -37,6 +45,12 @@ export const web3ProviderStore = (() => {
     set({ provider });
   }
 
+  async function disconnect() {
+    web3Modal.clearCachedProvider();
+    localStorage.removeItem(METAMASK_CONNECTION_KEY);
+    set(initialState);
+  }
+
   if (isConnected) {
     connect();
   };
@@ -45,10 +59,6 @@ export const web3ProviderStore = (() => {
 		subscribe,
 		// login: () => update(state => ({ })),
 		connect,
-    disconnect: async () => {
-      web3Modal.clearCachedProvider();
-      localStorage.removeItem(METAMASK_CONNECTION_KEY);
-      set(initialState);
-    },
+    disconnect,
 	};
 })();

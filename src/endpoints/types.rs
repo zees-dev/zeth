@@ -1,6 +1,5 @@
 use anyhow::anyhow;
 use std::collections::BTreeMap;
-// use surrealdb::sql::{Object, Value};
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Endpoint {

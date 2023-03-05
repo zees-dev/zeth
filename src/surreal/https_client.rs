@@ -7,6 +7,7 @@ use hyper_tls::HttpsConnector;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::str::FromStr;
+use surreal_simple_client::SurrealClient;
 use tokio::net::TcpStream;
 
 #[derive(Clone)]
@@ -91,6 +92,8 @@ impl SurrealHttpClient {
                     DEFINE FIELD enabled ON endpoint TYPE bool;
                     DEFINE FIELD date_added ON endpoint TYPE datetime;
                     DEFINE FIELD rpc_url ON endpoint TYPE string;
+                    DEFINE FIELD proxy_url ON endpoint TYPE string;
+                    -- TODO: ensure that the proxy_url cannot be updated by user
                     DEFINE FIELD type ON endpoint TYPE string;
                     DEFINE FIELD symbol ON endpoint TYPE string;
                     DEFINE FIELD block_explorer_url ON endpoint TYPE string;
@@ -160,7 +163,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_info_request() {
-        let client = SurrealHttpClient::new(
+        let client = surreal_https_client::SurrealHttpClient::new(
             "http://localhost:8000/sql",
             "admin",
             "admin",

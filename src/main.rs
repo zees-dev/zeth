@@ -14,24 +14,24 @@ use std::{
     net::SocketAddr,
     sync::{Arc, Mutex},
 };
+use surreal_simple_client::SurrealClient;
 use tokio::sync::broadcast::{Receiver, Sender};
 use tower_http::services::ServeDir;
 
 mod endpoints;
-mod surrealclient;
 use endpoints::{routes as endpoints_routes, service::EndpointsService};
 
-use crate::surrealclient::SurrealHttpClient;
+mod surreal;
 
 pub struct AppState {
     endpoint_service: EndpointsService,
     rpc_channel_map:
         Mutex<HashMap<String, (Sender<hyper::body::Bytes>, Receiver<hyper::body::Bytes>)>>,
-    surreal_http_client: SurrealHttpClient,
+    surreal_client: Arc<SurrealClient>,
 }
 
 impl AppState {
-    async fn new(surreal_http_client: SurrealHttpClient) -> Self {
+    async fn new(surreal_client: Arc<SurrealClient>) -> Self {
         // TODO inject surreal http client trait?
 
         let rpc_channel_map = Mutex::new(HashMap::<
@@ -39,12 +39,12 @@ impl AppState {
             (Sender<hyper::body::Bytes>, Receiver<hyper::body::Bytes>),
         >::new());
 
-        let endpoint_service = EndpointsService::new(surreal_http_client.clone());
+        let endpoint_service = EndpointsService::new(surreal_client.clone());
 
         Self {
             endpoint_service,
             rpc_channel_map,
-            surreal_http_client,
+            surreal_client,
         }
     }
 }
@@ -57,20 +57,18 @@ async fn main() -> Result<(), String> {
     tracing::info!("setting up client...");
 
     // TODO - get from config
-    let (surreal_rpc, admin_user, admin_pass, namespace, database) = (
-        "http://localhost:8000/sql",
-        "admin",
-        "admin",
-        "test",
-        "test",
-    );
+    let (surreal_ws_rpc, admin_user, admin_pass, namespace, database) =
+        ("ws://127.0.0.1:8000/rpc", "admin", "admin", "test", "test");
 
-    let surreal_http_client =
-        SurrealHttpClient::new(surreal_rpc, admin_user, admin_pass, namespace, database);
+    let mut surreal_client =
+        surreal::get_client(surreal_ws_rpc, admin_user, admin_pass, namespace, database)
+            .await
+            .map_err(|e| format!("failed to get surreal client: {}", e))?;
+    surreal::setup_surreal_db(&mut surreal_client)
+        .await
+        .map_err(|e| format!("failed to setup surreal db: {}", e))?;
 
-    surreal_http_client.setup_db().await.unwrap();
-
-    let state = Arc::new(AppState::new(surreal_http_client).await);
+    let state = Arc::new(AppState::new(Arc::new(surreal_client)).await);
 
     let app = Router::new()
         // .route("/", get(index_handler))

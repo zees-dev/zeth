@@ -250,7 +250,7 @@ async fn sse_handler(
 
 #[cfg(test)]
 mod tests {
-    use crate::surrealclient::SurrealHttpClient;
+    use crate::surreal::SurrealHttpClient;
 
     use super::*;
     use hyper::Method;

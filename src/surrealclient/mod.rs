@@ -45,6 +45,7 @@ impl SurrealHttpClient {
         let info_res = self.post("INFO FOR DB;").await?;
         if let Some(result) = info_res.result {
             if !result.tb.contains_key("user") {
+                tracing::info!("creating user table...");
                 let data = r#"
                     BEGIN TRANSACTION;
                     DEFINE TABLE user SCHEMAFULL
@@ -60,6 +61,7 @@ impl SurrealHttpClient {
                 self.post(data).await?;
             }
             if !result.sc.contains_key("allusers") {
+                tracing::info!("creating allusers scope...");
                 let data = r#"
                     BEGIN TRANSACTION;
                     DEFINE SCOPE allusers
@@ -81,24 +83,23 @@ impl SurrealHttpClient {
                 self.post(data).await?;
             }
             if !result.tb.contains_key("endpoint") {
+                tracing::info!("creating endpoint table...");
                 let data = r#"
                     BEGIN TRANSACTION;
                     DEFINE TABLE endpoint SCHEMAFULL
                         PERMISSIONS 
                             FOR select, create, update, delete WHERE user = $auth.id;
-                    DEFINE FIELD user ON endpoint TYPE record(user);
-                    DEFINE FIELD name ON endpoint TYPE string;
-                    DEFINE FIELD enabled ON endpoint TYPE bool;
-                    DEFINE FIELD date_added ON endpoint TYPE datetime;
-                    DEFINE FIELD rpc_url ON endpoint TYPE string;
-                    DEFINE FIELD type ON endpoint TYPE string;
-                    DEFINE FIELD symbol ON endpoint TYPE string;
+                    DEFINE FIELD user ON endpoint TYPE record(user) VALUE $auth.id;
+                    DEFINE FIELD name ON endpoint TYPE string VALUE string::trim($value) ASSERT string::length($value) > 2 AND string::length($value) < 65;
+                    DEFINE FIELD enabled ON endpoint TYPE bool VALUE $value or true;
+                    DEFINE FIELD date_added ON endpoint TYPE datetime VALUE time::now();
+                    DEFINE FIELD rpc_url ON endpoint TYPE string ASSERT $value = /^(http|https|ws|wss):\/\/.+/ AND string::length($value) < 129;
+                    -- TODO: get base db url from query (maybe different for every user)
+                    DEFINE FIELD proxy_url ON endpoint TYPE string VALUE string::concat(session::origin(), '/', $this.id, '/rpc');
+                    DEFINE FIELD symbol ON endpoint TYPE string ASSERT string::length($value) > 2 AND string::length($value) < 13;
                     DEFINE FIELD block_explorer_url ON endpoint TYPE string;
                     DEFINE INDEX idx_endpoint_name ON endpoint COLUMNS user, name UNIQUE;
                     DEFINE INDEX idx_endpoint_rpc_url ON endpoint COLUMNS user, rpc_url UNIQUE;
-                    -- TODO: define event for creation
-                    -- TODO: define event for update
-                    -- TODO: define event for deletion
                     COMMIT TRANSACTION;
                 "#;
                 self.post(data).await?;

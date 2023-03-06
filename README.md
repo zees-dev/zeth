@@ -111,16 +111,20 @@ BEGIN TRANSACTION;
 DEFINE TABLE endpoint SCHEMAFULL
   PERMISSIONS 
     FOR select, create, update, delete WHERE user = \$auth.id;
-DEFINE FIELD user ON endpoint TYPE record(user);
-DEFINE FIELD name ON endpoint TYPE string;
-DEFINE FIELD enabled ON endpoint TYPE bool;
-DEFINE FIELD date_added ON endpoint TYPE datetime;
-DEFINE FIELD rpc_url ON endpoint TYPE string;
-DEFINE FIELD type ON endpoint TYPE string;
-DEFINE FIELD symbol ON endpoint TYPE string;
+DEFINE FIELD user ON endpoint TYPE record(user) VALUE \$auth.id;
+DEFINE FIELD name ON endpoint TYPE string VALUE string::trim(\$value) ASSERT string::length(\$value) > 2 AND string::length(\$value) < 65;
+DEFINE FIELD enabled ON endpoint TYPE bool VALUE \$value or true;
+DEFINE FIELD date_added ON endpoint TYPE datetime VALUE time::now();
+DEFINE FIELD rpc_url ON endpoint TYPE string ASSERT \$value = /^(http|https|ws|wss):\/\/.+/ AND string::length(\$value) < 129;
+DEFINE FIELD proxy_url ON endpoint TYPE string VALUE string::concat(session::origin()', '/', \$this.id, '/rpc');
+DEFINE FIELD symbol ON endpoint TYPE string ASSERT string::length(\$value) > 2 AND string::length(\$value) < 13;
 DEFINE FIELD block_explorer_url ON endpoint TYPE string;
 DEFINE INDEX idx_endpoint_name ON endpoint COLUMNS user, name UNIQUE;
 DEFINE INDEX idx_endpoint_rpc_url ON endpoint COLUMNS user, rpc_url UNIQUE;
+# DEFINE EVENT generate_proxy_url
+#   ON TABLE endpoint
+#   WHEN \$event='CREATE'
+#   THEN (UPDATE endpoint SET proxy_url = string::concat(session::origin(), '/', \$after.id, '/rpc'));
 -- TODO: define event for creation
 -- TODO: define event for update
 -- TODO: define event for deletion
@@ -136,3 +140,45 @@ curl -X POST \
 ```
 
 ---
+
+```sh
+curl -X POST \
+  --header "Accept: application/json" \
+  --header "NS: test" \
+  --header "DB: test" \
+  --user "admin:admin" \
+  --data "remove table endpoint;" \
+  http://localhost:8000/sql
+```
+
+```sh
+curl -X POST \
+  --header "Accept: application/json" \
+  --header "NS: test" \
+  --header "DB: test" \
+	--header "SC: allusers" \
+  --user "786zshan@gmail.com:admin" \
+  --data "select * from endpoint;" \
+  http://localhost:8000/sql
+```
+
+
+---
+
+https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161
+
+wss://mainnet.infura.io/ws/v3/8792dc3bbc3743f6b884807fb6a22525
+
+curl --silent \
+	-X POST \
+	-H "Content-Type: application/json" \
+	-d '{"name": "eth-node", "is_dev": false, "enabled": true, "date_added": "2022-12-26T23:15:51.581789Z", "rpc_http": "https://rpc.flashbots.net", "rpc_ws": "wss://mainnet.infura.io/ws/v3/8792dc3bbc3743f6b884807fb6a22525" }' \
+	http://localhost:3000/api/v1/endpoint
+
+curl -X POST \
+	--header "Accept: application/json" \
+	--header "NS: test" \
+	--header "DB: test" \
+	--user "admin:admin" \
+	--data "INFO FOR TABLE endpoint;" \
+	http://localhost:8000/sql | jq .

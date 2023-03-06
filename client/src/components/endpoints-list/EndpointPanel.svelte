@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { formatDate, testRPCConnection } from "../../lib/utils";
+    import { endpointType, formatDate, testRPCConnection } from "../../lib/utils";
   import type { ConnectionStatus, Endpoint } from "../endpoint/types";
     import ConnectionIndicator from "./ConnectionIndicator.svelte";
     import ProtocolBadge from "./ProtocolBadge.svelte";
@@ -59,7 +59,7 @@
     </h2>
 
     <div class="pr-2 pb card-content-grid gap-2">
-      <ProtocolBadge class="text-sm truncate" type={endpoint.type} text={endpoint.rpc_url} />
+      <ProtocolBadge class="text-sm truncate" type={endpointType(endpoint.rpc_url)} text={endpoint.rpc_url} />
       <div class="text-sm text-gray-500 truncate">{endpoint.symbol}</div>
       <div class="text-sm text-gray-500 truncate">{formatDate(endpoint.date_added)}</div>
       <div class="text-sm text-gray-500 truncate">{endpoint.block_explorer_url}</div>

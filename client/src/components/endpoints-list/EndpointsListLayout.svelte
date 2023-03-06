@@ -8,6 +8,7 @@
   import type { Endpoint } from "../endpoint/types";
   import EndpointPanel from "./EndpointPanel.svelte";
   import ProtocolBadge from "./ProtocolBadge.svelte";
+    import { endpointType } from "../../lib/utils";
 
   let showAddEndpointPanel = false;
   // TODO: metamask connection button UI
@@ -58,7 +59,7 @@
         <div class="indicator w-[90%]">
           <div class="indicator-item">
             <div class="tooltip" data-tip={ep.rpc_url}>
-              <ProtocolBadge type={ep.type} />
+              <ProtocolBadge type={endpointType(ep.rpc_url)} />
             </div>
           </div>
           <a
@@ -90,8 +91,8 @@
           <div class="stat-title">Total endpoints</div>
           <div class="stat-value">{endpoints.length}</div>
           <div class="stat-desc gap-2">
-            <div class="badge badge-secondary">{endpoints.filter(e => e.type === 'http').length} HTTP</div>
-            <div class="badge badge-accent">{endpoints.filter(e => e.type === 'ws').length} WS</div>
+            <div class="badge badge-secondary">{endpoints.filter(e => endpointType(e.rpc_url) === 'http').length} HTTP</div>
+            <div class="badge badge-accent">{endpoints.filter(e => endpointType(e.rpc_url) === 'ws').length} WS</div>
           </div>
         </div>
         

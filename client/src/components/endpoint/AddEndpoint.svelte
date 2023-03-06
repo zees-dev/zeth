@@ -36,7 +36,6 @@
         await testRPCConnection(rpcUrl);
         testConnectionLoading = false;
       }
-      const type = endpointType(rpcUrl);
 
       const created = await $dbStore.db.create("endpoint", {
         user: $loginStore.userId, // TODO: this should be internally set
@@ -44,7 +43,6 @@
         enabled: true,
         date_added: (new Date()).toISOString(),
         rpc_url: rpcUrl,
-        type,
         symbol,
         block_explorer_url: blockExplorerUrl,
       });

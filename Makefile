@@ -5,7 +5,7 @@ clean:
 	rm -rf Zeth/
 	rm -rf ./**/.ethereum
 	# cargo clean
-.PHONY clean
+.PHONY: clean
 
 test:
 	# TODO

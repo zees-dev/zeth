@@ -9,24 +9,24 @@
   import EndpointPanel from "./EndpointPanel.svelte";
   import ProtocolBadge from "./ProtocolBadge.svelte";
     import { endpointType } from "../../lib/utils";
+    import { getEndpoints } from "../endpoint/queries";
 
   let showAddEndpointPanel = false;
   // TODO: metamask connection button UI
 
   let loading = true;
-  let endpoints: Endpoint[] | undefined = undefined;
+  let endpoints: Endpoint[] = [];
   let err: string | undefined = undefined;
 
-  onMount(async () => getEndpoints());
+  onMount(() => getEndpointsInComponent());
 
-  async function getEndpoints() {
+  async function getEndpointsInComponent() {
     loading = true;
+    endpoints = [];
     try {
-      const response = await $dbStore.db.query("SELECT * FROM endpoint;");
-      endpoints = (response as any[])[0].result as Endpoint[];
-      console.log(response);
+      const { result } = await getEndpoints($dbStore.db);
+      endpoints = result;
     } catch(err) {
-      endpoints = undefined;
       err = err;
     } finally {
       loading = false;
@@ -110,7 +110,7 @@
 
         <div class="stat place-items-center">
           <button class="stat-title btn btn-primary btn-sm mt-3" on:click={() => showAddEndpointPanel = true}>Add endpoint</button>
-          <SidePanel bind:show={showAddEndpointPanel} component={AddEndpoint} onSuccessfulSubmission={getEndpoints} />
+          <SidePanel bind:show={showAddEndpointPanel} component={AddEndpoint} onSuccessfulSubmission={getEndpointsInComponent} />
           <div class="stat-value">TODO</div>
         </div>
       </div>
@@ -130,19 +130,6 @@
     {:else if err}
       <p class="bg-error">failed to fetch endpoints: {err}</p>
     {/if}
-
-    <!-- {#await getEndpoints()}
-      <p>fetching endpoints...</p>
-    {:then endpoints }
-      {#each endpoints as ep (ep.id)}
-        <div class="flex flex-row">
-          <h2>{ep.name}</h2>
-          <p>-{ep.rpc_url}</p>
-        </div>
-      {/each}
-    {:catch error}
-      <p class="bg-error">failed to fetch endpoints: {error}</p>
-    {/await} -->
   </section>
 </div>
 

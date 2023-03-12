@@ -1,3 +1,4 @@
+export const ENDPOINT_TABLE = 'endpoint';
 
 export type ConnectionStatus = 'connecting' | 'connected' | undefined
 

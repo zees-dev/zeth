@@ -46,7 +46,7 @@
         symbol,
         block_explorer_url: blockExplorerUrl,
       });
-      console.info("created", created);
+      console.info("created:", created);
       onSuccessfulSubmission();
     } catch(err) {
       submissionError = err as string;

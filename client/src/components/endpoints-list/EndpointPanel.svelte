@@ -59,8 +59,9 @@
     </h2>
 
     <div class="pr-2 pb card-content-grid gap-2">
-      <ProtocolBadge class="text-sm truncate" type={endpointType(endpoint.rpc_url)} text={endpoint.rpc_url} />
+      <ProtocolBadge class="text-sm truncate" type={endpointType(endpoint.rpc_url)} text={endpoint.proxy_url} />
       <div class="text-sm text-gray-500 truncate">{endpoint.symbol}</div>
+      <ProtocolBadge class="text-sm truncate" type={endpointType(endpoint.rpc_url)} text={endpoint.rpc_url} />
       <div class="text-sm text-gray-500 truncate">{formatDate(endpoint.date_added)}</div>
       <div class="text-sm text-gray-500 truncate">{endpoint.block_explorer_url}</div>
 

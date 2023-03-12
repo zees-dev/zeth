@@ -19,12 +19,15 @@ interface QueryResponse<T> {
 
 export async function getEndpoint(db: Surreal, endpointId: string, params?: QueryParams) {
   let loading = true;
-  let result: Endpoint;
+  let result: Endpoint; // always set if error not thrown
   let error: unknown | boolean = false;
   try {
     const response = await db.query<SurrealResponse<Endpoint>[]>(`SELECT * FROM ${ENDPOINT_TABLE} WHERE id=${endpointId};`);
     if (response[0].status !== "OK") {
       throw new Error(`failed to get endpoint; ${endpointId}`);
+    }
+    if (response[0].result.length === 0) {
+      throw new Error(`endpoint not found; ${endpointId}`);
     }
     result = response[0].result[0];
   } catch (e) {
@@ -33,15 +36,18 @@ export async function getEndpoint(db: Surreal, endpointId: string, params?: Quer
   } finally {
     loading = false;
   }
-  return { loading, result, error };
+  return { loading, result: result!, error };
 }
 
 export async function getEndpoints(db: Surreal, params?: QueryParams) {
   let loading = true;
-  let result: Endpoint[];
+  let result: Endpoint[] = [];
   let error: unknown | boolean = false;
   try {
-    const response = await db.query<SurrealResponse<Endpoint>[]>(`SELECT * FROM ${ENDPOINT_TABLE};`);
+    const response = await db.query<SurrealResponse<Endpoint>[]>(
+      "SELECT * FROM type::table($tb);",
+      { tb: ENDPOINT_TABLE },
+    );
     if (response[0].status !== "OK") {
       throw new Error(`failed to get endpoints`);
     }

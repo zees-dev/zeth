@@ -1,16 +1,26 @@
 use anyhow::anyhow;
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub struct Endpoint {
-    pub id: Option<String>,
-    pub name: String,
-    pub is_dev: bool,
-    pub enabled: bool,
-    // pub date_added: chrono::DateTime<chrono::Utc>,
-    pub explorer_url: Option<String>,
-    pub rpc_http: String,
-    pub rpc_ws: Option<String>,
+    // "id": "endpoint:jplluhvaqi5oyajvnhh6",
+    // "name": "asa",
+    // "date_added": "2023-03-06T13:52:26.953050294Z",
+    // "user": "user:ljdvgjuxtyfycjvyrcgp"
+    // "proxy_url": "http://localhost:3000/endpoint:jplluhvaqi5oyajvnhh6/rpc",
+    // "rpc_url": "http://a",
+    // "symbol": "ETH",
+    // "enabled": true,
+    // "block_explorer_url": "",
+    date_added: String,
+    enabled: bool,
+    id: String,
+    name: String,
+    proxy_url: String,
+    pub rpc_url: String,
+    symbol: String,
+    user: String,
+    block_explorer_url: String,
 }
 
 impl Endpoint {

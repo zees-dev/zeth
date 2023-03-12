@@ -9,6 +9,13 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use tokio::net::TcpStream;
 
+#[derive(serde::Deserialize, Debug, Clone)]
+struct SurrealResponse<T> {
+    time: String,
+    status: String,
+    result: T,
+}
+
 #[derive(Clone)]
 pub struct SurrealHttpClient {
     url: String,
@@ -42,11 +49,10 @@ impl SurrealHttpClient {
 
     // TODO: read setup from surreal ql file instead
     pub async fn setup_db(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let info_res = self.post("INFO FOR DB;").await?;
-        if let Some(result) = info_res.result {
-            if !result.tb.contains_key("user") {
-                tracing::info!("creating user table...");
-                let data = r#"
+        let result = self.post::<SurrealResult>("INFO FOR DB;").await?;
+        if !result.tb.contains_key("user") {
+            tracing::info!("creating user table...");
+            let data = r#"
                     BEGIN TRANSACTION;
                     DEFINE TABLE user SCHEMAFULL
                     PERMISSIONS
@@ -58,11 +64,11 @@ impl SurrealHttpClient {
                     DEFINE INDEX idx_user ON user COLUMNS user UNIQUE;
                     COMMIT TRANSACTION;
                 "#;
-                self.post(data).await?;
-            }
-            if !result.sc.contains_key("allusers") {
-                tracing::info!("creating allusers scope...");
-                let data = r#"
+            self.post(data).await?;
+        }
+        if !result.sc.contains_key("allusers") {
+            tracing::info!("creating allusers scope...");
+            let data = r#"
                     BEGIN TRANSACTION;
                     DEFINE SCOPE allusers
                     -- the JWT session will be valid for 14 days
@@ -80,11 +86,11 @@ impl SurrealHttpClient {
                     -- this optional clause will be run when calling the signup method for this scope
                     COMMIT TRANSACTION;
                 "#;
-                self.post(data).await?;
-            }
-            if !result.tb.contains_key("endpoint") {
-                tracing::info!("creating endpoint table...");
-                let data = r#"
+            self.post(data).await?;
+        }
+        if !result.tb.contains_key("endpoint") {
+            tracing::info!("creating endpoint table...");
+            let data = r#"
                     BEGIN TRANSACTION;
                     DEFINE TABLE endpoint SCHEMAFULL
                         PERMISSIONS 
@@ -102,18 +108,15 @@ impl SurrealHttpClient {
                     DEFINE INDEX idx_endpoint_rpc_url ON endpoint COLUMNS user, rpc_url UNIQUE;
                     COMMIT TRANSACTION;
                 "#;
-                self.post(data).await?;
-            }
-        } else {
-            Err("Failed to get info for DB".to_string())?;
+            self.post(data).await?;
         }
         Ok(())
     }
 
-    pub async fn post(
+    pub async fn post<T: serde::de::DeserializeOwned + Clone>(
         &self,
         data: &str,
-    ) -> Result<SurrealResponse, Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<T, Box<dyn std::error::Error + Send + Sync>> {
         let req = Request::builder()
             .method("POST")
             .uri(&self.url)
@@ -132,11 +135,16 @@ impl SurrealHttpClient {
 
         let res = self.client.request(req).await?;
         let body = hyper::body::to_bytes(res.into_body()).await?;
-        let res = serde_json::from_slice::<Vec<SurrealResponse>>(&body)?
+
+        // convert body to str
+        // let body_str = std::str::from_utf8(&body)?.to_string();
+
+        let obj: Vec<SurrealResponse<T>> = serde_json::from_slice(&body)?;
+        let result = &obj
             .first()
-            .unwrap()
-            .clone();
-        Ok(res)
+            .ok_or("No response from SurrealQL server")?
+            .result;
+        Ok(result.to_owned())
     }
 }
 
@@ -146,13 +154,6 @@ struct SurrealResult {
     dt: HashMap<String, String>,
     sc: HashMap<String, String>,
     tb: HashMap<String, String>,
-}
-
-#[derive(serde::Deserialize, Debug, Clone)]
-pub struct SurrealResponse {
-    time: String,
-    status: String,
-    result: Option<SurrealResult>,
 }
 
 #[cfg(test)]
@@ -170,7 +171,7 @@ mod tests {
         );
         client.setup_db().await.unwrap();
 
-        let res = client.post("INFO FOR DB;").await.unwrap();
+        let res = client.post::<SurrealResult>("INFO FOR DB;").await.unwrap();
         println!("{:?}", res);
 
         assert_eq!(1, 2);

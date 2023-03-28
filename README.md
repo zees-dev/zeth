@@ -162,23 +162,3 @@ curl -X POST \
   http://localhost:8000/sql
 ```
 
-
----
-
-https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161
-
-wss://mainnet.infura.io/ws/v3/8792dc3bbc3743f6b884807fb6a22525
-
-curl --silent \
-	-X POST \
-	-H "Content-Type: application/json" \
-	-d '{"name": "eth-node", "is_dev": false, "enabled": true, "date_added": "2022-12-26T23:15:51.581789Z", "rpc_http": "https://rpc.flashbots.net", "rpc_ws": "wss://mainnet.infura.io/ws/v3/8792dc3bbc3743f6b884807fb6a22525" }' \
-	http://localhost:3000/api/v1/endpoint
-
-curl -X POST \
-	--header "Accept: application/json" \
-	--header "NS: test" \
-	--header "DB: test" \
-	--user "admin:admin" \
-	--data "INFO FOR TABLE endpoint;" \
-	http://localhost:8000/sql | jq .
